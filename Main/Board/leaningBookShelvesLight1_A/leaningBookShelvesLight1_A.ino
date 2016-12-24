@@ -22,20 +22,19 @@
 
 
 #define DEBUG 1                             //comment/un-comment
-const int _button0Pin = 2;                  //#define BUTTON_0_PIN 2 _button0Pin
-const int _ledDOut0Pin = 6;                 //DOut 0 -> LED strip 0 DIn
-const int _ledDOut1Pin = 7;                 //DOut 1 -> LED strip 1 DIn
-const int _ledDOut2Pin = 8;                 //DOut 2 -> LED strip 2 DIn
-const int _capSenseSendPin = 9;             //capacitive touch sensor (send)
-const int _capSense0Pin = 10;               //mode - capacitive touch sensor (receive)
-const int _capSense1Pin = 11;               //sub-mode - capacitive touch sensor (receive)
-const int _capSense2Pin = 12;               //volume up - capacitive touch sensor (receive)
+const int _ledDOut0Pin = 2;                 //DOut 0 -> LED strip 0 DIn
+const int _ledDOut1Pin = 3;                 //DOut 1 -> LED strip 1 DIn
+const int _ledDOut2Pin = 4;                 //DOut 2 -> LED strip 2 DIn
+const int _uvSendPin = 5;                   //grouped send for uv emittor diodes - check, this should be digital pin..
+const int _capSenseSendPin = 6;             //capacitive touch sensor (send)
+const int _capSense0Pin = 7;               //mode - capacitive touch sensor (receive)
+const int _capSense1Pin = 8;               //sub-mode - capacitive touch sensor (receive)
+const int _capSense2Pin = 9;               //volume up - capacitive touch sensor (receive)
+const int _capSense3Pin = 10;               //volume down - capacitive touch sensor (receive)
 const int _ledPin = 13;                     //built-in LED
-const int _capSense3Pin = 14;               //volume down - capacitive touch sensor (receive)
 
 /*----------------------------libraries----------------------------*/
 #include <EEPROM.h>                         //a few saved settings
-#include <Bounce2.h>                        //buttons with de-bounce
 #include <CapacitiveSensor.h>               //capacitive touch sensors
 #include <FastLED.h>                        //WS2812B LED strip control and effects
 
@@ -46,7 +45,7 @@ const int _capSense3Pin = 14;               //volume down - capacitive touch sen
  for now only use serial when in debug 
 */
 const String _progName = "bookShelvesLight1_A";
-const String _progVers = "0.2";             //cloned from deskLight1_A v0.23
+const String _progVers = "0.21";             //cloned from deskLight1_A v0.23
 const int _mainLoopDelay = 0;               //just in case
 boolean _firstTimeSetupDone = false;        //starts false //this is mainly to catch an interrupt trigger that happens during setup, but is usefull for other things
 volatile boolean _onOff = false;            //this should init false, then get activated by input - on/off true/false
@@ -58,16 +57,11 @@ int _modePreset[_modePresetSlotNum] = { 0, 4, 5 }; //test basic, tap bt to cycle
 volatile int _modeCur = 1;                  //current mode in use - this is not the var you are looking for.. try _modePresetSlotCur
 int _modePresetSlotCur = 0;                 //the current array pos (slot) in the current preset, as opposed to..      //+/- by userInput
 
-/*----------------------------buttons----------------------------*/
-const unsigned long _buttonDebounceTime = 5; //unsigned long (5ms)
-Bounce _button0 = Bounce();                 //Instantiate a Bounce object
-boolean _button0Toggled = false;
-
 /*----------------------------touch sensors----------------------------*/
 CapacitiveSensor _touch0 = CapacitiveSensor(_capSenseSendPin,_capSense0Pin);  //mode
-CapacitiveSensor _touch1 = CapacitiveSensor(_capSenseSendPin,_capSense1Pin);  //sub-mode
-CapacitiveSensor _touch2 = CapacitiveSensor(_capSenseSendPin,_capSense2Pin);  //vol up
-CapacitiveSensor _touch3 = CapacitiveSensor(_capSenseSendPin,_capSense3Pin);  //vol down
+//CapacitiveSensor _touch1 = CapacitiveSensor(_capSenseSendPin,_capSense1Pin);  //sub-mode
+CapacitiveSensor _touch2 = CapacitiveSensor(_capSenseSendPin,_capSense2Pin);  //brightness up
+CapacitiveSensor _touch3 = CapacitiveSensor(_capSenseSendPin,_capSense3Pin);  //brightness down
 //boolean _touchSensorToggled[3];
 
 /*----------------------------LED----------------------------*/
@@ -93,19 +87,12 @@ LED_SEGMENT ledSegment[_segmentTotal] = {
     { 25, 27, 3 },
     { 28, 30, 3 },
     { 31, 34, 4 }
-};
-//LED_SEGMENT ledSegment[_segmentTotal] = { 
-//  { 0, 9, 10 }, 
-//  { 10, 19, 10 }, 
-//  { 20, 29, 10 },
-//  { 30, 39, 10 }
-//};                                
+};                 
 CHSV startColor( 144, 70, 64 );
 CHSV endColor( 31, 71, 69 );
 CRGB startColor_RGB( 3, 144, 232 );
 CRGB endColor_RGB( 249, 180, 1 );
 
-//CRGB leds[_ledNumPerStrip];                     //global RGB array
 CRGB leds[_ledNumOfStrips][_ledNumPerStrip];    //global RGB array
 int _ledState = LOW;                            //use to toggle LOW/HIGH (ledState = !ledState)
 #define TEMPERATURE_0 WarmFluorescent
@@ -129,7 +116,7 @@ void setup() {
   
   delay(3000);                              //give the power, LED strip, etc. a couple of secs to stabilise
   setupLEDs();
-  setupUserInputs();
+  //setupUserInputs();                      //touch sensors already setup by library
 
   #ifdef DEBUG
   //everything done? ok then..

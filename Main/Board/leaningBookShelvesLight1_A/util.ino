@@ -7,6 +7,7 @@
  This places different coloured lights at the ends of the LED strip(s) segments for quick visual feedback of calculations
  */
 void checkSegmentEndpoints() {
+  
   for(int i = 0; i < _ledNumOfStrips; i++) {
     fill_solid( leds[i], _ledNumPerStrip, CRGB(0,0,0));
     
@@ -14,16 +15,8 @@ void checkSegmentEndpoints() {
       leds[i][ledSegment[_segmentTotal].first] = CRGB(i*20, j*50, 0);
       leds[i][ledSegment[_segmentTotal].last] = CRGB(0, j*50, i*20);
     }
-      
-//      leds[i][ledSegment[1].first] = CRGB(0, 255, 0);
-//      leds[i][ledSegment[1].last] = CRGB(0, 255, 0);
-//      
-//      leds[i][ledSegment[2].first] = CRGB(0, 0, 255);
-//      leds[i][ledSegment[2].last] = CRGB(0, 0, 255);
-//      
-//      leds[i][ledSegment[3].first] = CRGB(0, 255, 0);
-//      leds[i][ledSegment[3].last] = CRGB(0, 255, 0);
   }
+  
 }
 
 /*
