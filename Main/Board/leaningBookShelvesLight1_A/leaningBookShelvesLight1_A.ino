@@ -27,10 +27,11 @@ const int _ledDOut1Pin = 3;                 //DOut 1 -> LED strip 1 DIn
 const int _ledDOut2Pin = 4;                 //DOut 2 -> LED strip 2 DIn
 const int _uvSendPin = 5;                   //grouped send for uv emittor diodes - check, this should be digital pin..
 const int _capSenseSendPin = 6;             //capacitive touch sensor (send)
-const int _capSense0Pin = 7;               //mode - capacitive touch sensor (receive)
-const int _capSense1Pin = 8;               //sub-mode - capacitive touch sensor (receive)
-const int _capSense2Pin = 9;               //volume up - capacitive touch sensor (receive)
-const int _capSense3Pin = 10;               //volume down - capacitive touch sensor (receive)
+const int _capSense0Pin = 7;                //on/off (receive) - note: all other touch sensors will trigger 'on' if 'off', aswell as this pin..
+const int _capSense1Pin = 8;                //mode - capacitive touch sensor (receive)
+const int _capSense2Pin = 9;                //sub-mode - capacitive touch sensor (receive) - not in use yet
+const int _capSense3Pin = 10;               //volume up - capacitive touch sensor (receive)
+const int _capSense4Pin = 11;               //volume down - capacitive touch sensor (receive)
 const int _ledPin = 13;                     //built-in LED
 
 /*----------------------------libraries----------------------------*/
@@ -52,17 +53,17 @@ volatile boolean _onOff = false;            //this should init false, then get a
 
 /*----------------------------modes----------------------------*/
 const int _modeNum = 9;
-const int _modePresetSlotNum = 3;
-int _modePreset[_modePresetSlotNum] = { 0, 4, 5 }; //test basic, tap bt to cycle around 3 mode slots   //expand to array or struct later for more presets
-volatile int _modeCur = 1;                  //current mode in use - this is not the var you are looking for.. try _modePresetSlotCur
+const int _modePresetSlotNum = 7;
+int _modePreset[_modePresetSlotNum] = { 0, 2, 3, 4, 5, 7, 8 }; //test basic, tap bt to cycle around 3 mode slots   //expand to array or struct later for more presets
+volatile int _modeCur = 0;                  //current mode in use - this is not the var you are looking for.. try _modePresetSlotCur
 int _modePresetSlotCur = 0;                 //the current array pos (slot) in the current preset, as opposed to..      //+/- by userInput
 
 /*----------------------------touch sensors----------------------------*/
-CapacitiveSensor _touch0 = CapacitiveSensor(_capSenseSendPin,_capSense0Pin);  //mode
-//CapacitiveSensor _touch1 = CapacitiveSensor(_capSenseSendPin,_capSense1Pin);  //sub-mode
-CapacitiveSensor _touch2 = CapacitiveSensor(_capSenseSendPin,_capSense2Pin);  //brightness up
-CapacitiveSensor _touch3 = CapacitiveSensor(_capSenseSendPin,_capSense3Pin);  //brightness down
-//boolean _touchSensorToggled[3];
+CapacitiveSensor _touch0 = CapacitiveSensor(_capSenseSendPin,_capSense0Pin);  //on/off
+CapacitiveSensor _touch1 = CapacitiveSensor(_capSenseSendPin,_capSense1Pin);  //mode
+//CapacitiveSensor _touch2 = CapacitiveSensor(_capSenseSendPin,_capSense2Pin);  //sub-mode
+//CapacitiveSensor _touch3 = CapacitiveSensor(_capSenseSendPin,_capSense3Pin);  //brightness up
+//CapacitiveSensor _touch4 = CapacitiveSensor(_capSenseSendPin,_capSense4Pin);  //brightness down
 
 /*----------------------------LED----------------------------*/
 typedef struct {
@@ -71,7 +72,7 @@ typedef struct {
   byte total;
 } LED_SEGMENT;
 const int _ledNumOfStrips = 3;                  //3x LED strips (12, 34, 34)
-const int _ledNumPerStrip = 35;                 //Xm strip with  LEDs
+const int _ledNumPerStrip = 35;                 //Xm strip with LEDs
 //const int _ledNum = 40;                         //TEMP testing - 55 on roll, using 40
 const int _segmentTotal = 10;                   //total segments on each strip
 const int _ledGlobalBrightness = 255;           //global brightness
@@ -99,6 +100,7 @@ int _ledState = LOW;                            //use to toggle LOW/HIGH (ledSta
 #define TEMPERATURE_1 StandardFluorescent
 #define TEMPERATURE_2 CoolWhiteFluorescent
 int _colorTempCur = 5;                          //current colour temperature
+
 
 /*----------------------------MAIN----------------------------*/
 void setup() {
