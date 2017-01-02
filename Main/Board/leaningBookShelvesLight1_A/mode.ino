@@ -45,22 +45,6 @@ void loopModes() {
   } //END onOff else
 }
 
-/*----------------------------mode utils----------------------------*/
-void incrementPresetSlot() {
-  _modePresetSlotCur += 1;
-  incDecPresSlot_prtB();
-}
-
-void decrementPresetSlot() {
-  _modePresetSlotCur -= 1;
-  incDecPresSlot_prtB();
-}
-
-void incDecPresSlot_prtB() {
-  if(_modePresetSlotCur >= _modePresetSlotNum){ _modePresetSlotCur = 0; }  //TEMP rollover catch
-  _modeCur = _modePreset[_modePresetSlotCur];
-}
-
 /*----------------------------modes----------------------------*/
 void mode0() {
   //name should be glow!

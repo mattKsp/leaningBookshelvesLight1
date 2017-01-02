@@ -1,5 +1,41 @@
 /*----------------------------util----------------------------*/
 
+
+/*
+ * Mode utils
+ */
+void incrementPresetSlot() {
+  _modePresetSlotCur += 1;
+  incDecPresSlot_prtB();
+}
+void decrementPresetSlot() {
+  _modePresetSlotCur -= 1;
+  incDecPresSlot_prtB();
+}
+void incDecPresSlot_prtB() {
+  if(_modePresetSlotCur >= _modePresetSlotNum){ _modePresetSlotCur = 0; }  //TEMP rollover catch
+  _modeCur = _modePreset[_modePresetSlotCur];
+}
+
+/*
+ * Golbal brightness utils
+ */
+void increaseBrightness() {
+  _ledGlobalBrightnessCur += _ledBrightnessIncDecAmount;
+  brightnessRolloverCatch();
+}
+void decreaseBrightness() {
+  _ledGlobalBrightnessCur -= _ledBrightnessIncDecAmount;
+  brightnessRolloverCatch();
+}
+void brightnessRolloverCatch() {
+  if(_ledGlobalBrightnessCur > 255) {
+    _ledGlobalBrightnessCur = 255;
+  } else if(_ledGlobalBrightnessCur < 0) {
+    _ledGlobalBrightnessCur = 0;
+  }
+}
+
 /*
  Check Segment Endpoints
  usage | checkSegmentEndpoints();

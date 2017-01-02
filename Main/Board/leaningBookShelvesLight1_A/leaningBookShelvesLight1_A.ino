@@ -46,8 +46,8 @@ const int _ledPin = 13;                     //built-in LED
  for now only use serial when in debug 
 */
 const String _progName = "bookShelvesLight1_A";
-const String _progVers = "0.21";             //cloned from deskLight1_A v0.23
-const int _mainLoopDelay = 0;               //just in case
+const String _progVers = "0.22";             //cloned from deskLight1_A v0.23
+//const int _mainLoopDelay = 0;               //just in case  - using FastLED.delay instead..
 boolean _firstTimeSetupDone = false;        //starts false //this is mainly to catch an interrupt trigger that happens during setup, but is usefull for other things
 volatile boolean _onOff = false;            //this should init false, then get activated by input - on/off true/false
 
@@ -65,6 +65,16 @@ CapacitiveSensor _touch1 = CapacitiveSensor(_capSenseSendPin,_capSense1Pin);  //
 //CapacitiveSensor _touch3 = CapacitiveSensor(_capSenseSendPin,_capSense3Pin);  //brightness up
 //CapacitiveSensor _touch4 = CapacitiveSensor(_capSenseSendPin,_capSense4Pin);  //brightness down
 
+byte _touchSensorRes = 20;  //sample/sensor resolution - higher is better but slower to read
+long _touchSensorThreshold = 100;  //??? no idea - start at 100 and test  //unsigned long   //1 for all at the moment
+
+//1,000 microseconds in a millisecond and 1,000,000 microseconds in a second
+//eg. 6000 millisecond = 0.6 milliseconds = 0.0006 seconds
+//micros() may be too small, might end up using millis()
+const long _touchDeBounceInterval = 500;                            //interval to de-bounce in milliseconds    //const int 
+long _touchPrevMillis[5] = { 0, 0, 0, 0, 0 };                          //how long between 'bounces' //unsigned long
+boolean _touchToggled[5] = { false, false, false, false, false };
+
 /*----------------------------LED----------------------------*/
 typedef struct {
   byte first;
@@ -75,8 +85,10 @@ const int _ledNumOfStrips = 3;                  //3x LED strips (12, 34, 34)
 const int _ledNumPerStrip = 35;                 //Xm strip with LEDs
 //const int _ledNum = 40;                         //TEMP testing - 55 on roll, using 40
 const int _segmentTotal = 10;                   //total segments on each strip
-const int _ledGlobalBrightness = 255;           //global brightness
-#define UPDATES_PER_SECOND 100                  //main loop FastLED show delay
+const int _ledGlobalBrightness = 255;           //global brightness - do not adjust this
+int _ledGlobalBrightnessCur = 255;              //current global brightness - adjust this
+int _ledBrightnessIncDecAmount = 10;            //the brightness amount to increase or decrease
+#define UPDATES_PER_SECOND 120                  //main loop FastLED show delay //100
 LED_SEGMENT ledSegment[_segmentTotal] = { 
     { 0, 0, 1 }, 
     { 1, 5, 5 }, 
@@ -143,6 +155,6 @@ void loop() {
   FastLED.show();                           //send all the data to the strips
   FastLED.delay(1000 / UPDATES_PER_SECOND);
   //
-  delay(_mainLoopDelay);
+  //delay(_mainLoopDelay);  //using FastLED.delay instead..
 }
 
