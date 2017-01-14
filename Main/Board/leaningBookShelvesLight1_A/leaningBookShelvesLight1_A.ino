@@ -26,6 +26,7 @@ const int _ledDOut0Pin = 2;                 //DOut 0 -> LED strip 0 DIn
 const int _ledDOut1Pin = 3;                 //DOut 1 -> LED strip 1 DIn
 const int _ledDOut2Pin = 4;                 //DOut 2 -> LED strip 2 DIn
 const int _uvSendPin = 5;                   //grouped send for uv emittor diodes - check, this should be digital pin..
+//..insert UV sensor return pins here.. (may need to upgrade board, or expand with scanning chip)
 const int _capSenseSendPin = 6;             //capacitive touch sensor (send)
 const int _capSense0Pin = 7;                //on/off (receive) - note: all other touch sensors will trigger 'on' if 'off', aswell as this pin..
 const int _capSense1Pin = 8;                //mode - capacitive touch sensor (receive)
@@ -46,7 +47,7 @@ const int _ledPin = 13;                     //built-in LED
  for now only use serial when in debug 
 */
 const String _progName = "bookShelvesLight1_A";
-const String _progVers = "0.22";             //cloned from deskLight1_A v0.23
+const String _progVers = "0.24";             //cloned from deskLight1_A v0.23
 //const int _mainLoopDelay = 0;               //just in case  - using FastLED.delay instead..
 boolean _firstTimeSetupDone = false;        //starts false //this is mainly to catch an interrupt trigger that happens during setup, but is usefull for other things
 volatile boolean _onOff = false;            //this should init false, then get activated by input - on/off true/false
@@ -76,6 +77,17 @@ long _touchPrevMillis[5] = { 0, 0, 0, 0, 0 };                          //how lon
 boolean _touchToggled[5] = { false, false, false, false, false };
 
 /*----------------------------LED----------------------------*/
+/*
+ * the bookshelf has 3 main uprights, with 3 segmented LED strips running up each.
+ * there are 10 shelves, therefore 10 segments.
+ * 2 of the uprights are full height (2.4m, 10 shelves), and the 3rd is shorter (0.8m, 3 shelves).
+ * the 3rd strip is still addressed as a full clone, even though most of it isn't there to receive the signals.
+ * ..easier this way. there is no return data, so this is just allocating memory and sending signals to nowhere.
+ * ledSegment[] is the main setup (!!! needs name change !!!). bottom to top, segmented by shelf location (the shelf height lowers as we go up the bookshelf. bigger books on the bottom shelves, smaller on the top).
+ * ..mabye.. ledSegmentVerticalA[]
+ * 
+ * hmm.. might have to change this structure around and list individual numbers in fixed arrays...
+ */
 typedef struct {
   byte first;
   byte last;
@@ -83,30 +95,29 @@ typedef struct {
 } LED_SEGMENT;
 const int _ledNumOfStrips = 3;                  //3x LED strips (12, 34, 34)
 const int _ledNumPerStrip = 35;                 //Xm strip with LEDs
-//const int _ledNum = 40;                         //TEMP testing - 55 on roll, using 40
-const int _segmentTotal = 10;                   //total segments on each strip
-const int _ledGlobalBrightness = 255;           //global brightness - do not adjust this
-int _ledGlobalBrightnessCur = 255;              //current global brightness - adjust this
+const int _segmentTotal = 10;                   //total segments (shelves) on each strip
+const int _ledGlobalBrightness = 255;           //global brightness - use this to cap the brightness
+int _ledGlobalBrightnessCur = 255;              //current global brightness - adjust this one!
 int _ledBrightnessIncDecAmount = 10;            //the brightness amount to increase or decrease
 #define UPDATES_PER_SECOND 120                  //main loop FastLED show delay //100
 LED_SEGMENT ledSegment[_segmentTotal] = { 
-    { 0, 0, 1 }, 
-    { 1, 5, 5 }, 
-    { 6, 10, 5 },
-    { 11, 14, 4 },
-    { 15, 18, 4 },
-    { 19, 22, 4 },
-    { 23, 25, 3 },
-    { 25, 27, 3 },
-    { 28, 30, 3 },
-    { 31, 34, 4 }
-};                 
+  { 0, 0, 1 }, 
+  { 1, 5, 5 }, 
+  { 6, 10, 5 },
+  { 11, 14, 4 },
+  { 15, 18, 4 },
+  { 19, 22, 4 },
+  { 23, 25, 3 },
+  { 25, 27, 3 },
+  { 28, 30, 3 },
+  { 31, 34, 4 }
+};
 CHSV startColor( 144, 70, 64 );
 CHSV endColor( 31, 71, 69 );
 CRGB startColor_RGB( 3, 144, 232 );
 CRGB endColor_RGB( 249, 180, 1 );
 
-CRGB leds[_ledNumOfStrips][_ledNumPerStrip];    //global RGB array
+CRGB leds[_ledNumOfStrips][_ledNumPerStrip];    //global RGB array matrix
 int _ledState = LOW;                            //use to toggle LOW/HIGH (ledState = !ledState)
 #define TEMPERATURE_0 WarmFluorescent
 #define TEMPERATURE_1 StandardFluorescent
