@@ -28,7 +28,7 @@
 /*----------------------------arduino pins----------------------------*/
 
 /* 
- * Arduino Prom Mini pins:
+ * Arduino Pro Mini pins:
  * 
  * serial 0,1
  * interrupts 2,3
@@ -57,6 +57,7 @@ const int _ledPin = 13;                     //built-in LED
 //#include <Bounce2.h>                      //buttons with de-bounce
 #include <CapacitiveSensor.h>               //capacitive touch sensors
 #include <FastLED.h>                        //WS2812B LED strip control and effects
+#include <MT_BlinkStatusLED.h>
 
 /*----------------------------system----------------------------*/
 /* 
