@@ -39,7 +39,8 @@ boolean _debugOverlay = false;                //show debug overlay (eg. show seg
 #include <DS3231_Simple.h>                    //DS3231 realtime clock (with AT24C32 memory backback)
 #include <FastLED.h>                          //WS2812B LED strip control and effects
 #include <MT_BlinkStatusLED.h>
-#include <Wire.h>                             //include, but do not need to initialise - for DS3231
+#include <Wire.h>                             //include, but do not need to initialise - for DS3231 & CAP1296
+#include <CAP1296.h>                          //Microchip capacitive touch IC - CAP1296 (6 sensors)
 
 /*----------------------------arduino pro mini pins----------------------------*/
 //serial TX pin = 0
@@ -59,7 +60,7 @@ const int _i2cSCLpin = 19;                    //SDA (A5=19)
 
 /*----------------------------system----------------------------*/
 const String _progName = "bookShelvesLight1_B";
-const String _progVers = "0.11";              //fork from bookShelvesLight1_A - moved over to custom board
+const String _progVers = "0.12";              //added CAP1296 touch
 //const int _mainLoopDelay = 0;               //just in case  - using FastLED.delay instead..
 boolean _firstTimeSetupDone = false;          //starts false //this is mainly to catch an interrupt trigger that happens during setup, but is usefull for other things
 volatile boolean _onOff = false;              //this should init false, then get activated by input - on/off true/false
@@ -97,6 +98,7 @@ int _sunSetStateCur = 0;                      //current sunset internal state (b
 /*----------------------------buttons----------------------------*/
 
 /*----------------------------touch sensors----------------------------*/
+CAP1296 touch;                                //CAP1296 on I2C
 
 /*----------------------------LED----------------------------*/
 typedef struct {
