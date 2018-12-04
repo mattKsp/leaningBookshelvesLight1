@@ -1,18 +1,6 @@
 /*----------------------------util----------------------------*/
 
 /*
-  DS3231 - 'kick the interrupt'
-  TEMP - just to make sure interrupt output pin SQW gets turned on
-  enables interrupt pin, alarm 2 and alarm
- */
-void DS3231kickInterrupt() {
-  Wire.beginTransmission(DS3231_I2C_ADDRESS);
-  Wire.write(0x0E);                         //control location
-  Wire.write(B00000111);                    //..this!
-  Wire.endTransmission();
-}
-
-/*
  * Mode utils
  */
 void incrementPresetSlot() {
@@ -31,6 +19,11 @@ void incDecPresSlot_prtB() {
 /*
  * Golbal brightness utils
  */
+void setGlobalBrightness(int gb) {
+  //use this to achieve an override from the mesh, eg. to match levels
+  _ledGlobalBrightnessCur = gb;
+  brightnessRolloverCatch();
+}
 void increaseBrightness() {
   _ledGlobalBrightnessCur += _ledBrightnessIncDecAmount;
   brightnessRolloverCatch();
@@ -84,6 +77,7 @@ void showColorTempPx() {
  ATmega168 & 328 chips can use this trick to read their own voltage rails
  https://code.google.com/archive/p/tinkerit/wikis/SecretVoltmeter.wiki
  */
+ /*
 long getVoltage() { 
   long result;                              // Read 1.1V reference against AVcc
   ADMUX = _BV(REFS0) | _BV(MUX3) | _BV(MUX2) | _BV(MUX1); 
@@ -95,6 +89,27 @@ long getVoltage() {
   result = 1126400L / result;               // Back-calculate AVcc in mV
   return result;
 }
+*/
+
+/*
+  SerialEvent occurs whenever a new data comes in the
+  hardware serial RX.  This routine is run between each
+  time loop() runs, so using delay inside loop can delay
+  response.  Multiple bytes of data may be available.
+*/
+//void serialEvent() {
+//  while (Serial.available()) {
+//    // get the new byte:
+//    char inChar = (char)Serial.read();
+//    // add it to the inputString:
+//    _inputString += inChar;
+//    // if the incoming character is a newline, set a flag
+//    // so the main loop can do something about it:
+//    if (inChar == '\n') {
+//      _stringComplete = true;
+//    }
+//  }
+//}
 
 
 /*

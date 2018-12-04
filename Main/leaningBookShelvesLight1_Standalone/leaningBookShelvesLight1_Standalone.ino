@@ -1,6 +1,6 @@
 /*
-    'leaningBookshelvesLight1_B' by Thurstan. LED strip bookshelves light.
-    Copyright (C) 2017  MTS Standish (Thurstan|mattKsp)
+    'leaningBookshelvesLight1_Standalone' by Thurstan. LED strip bookshelves light.
+    Copyright (C) 2018 MTS Standish (mattThurstan)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -15,7 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-    https://github.com/mattKsp/
+    https://github.com/mattThurstan/
 */
 
 /*
@@ -59,8 +59,8 @@ const int _i2cSDApin = 18;                    //SDA (A4=18)
 const int _i2cSCLpin = 19;                    //SDA (A5=19)
 
 /*----------------------------system----------------------------*/
-const String _progName = "bookShelvesLight1_B";
-const String _progVers = "0.12";              //added CAP1296 touch
+const String _progName = "bookShelvesLight1_Standalone";
+const String _progVers = "0.20";              //split to Standalone/WIFI/Mesh
 //const int _mainLoopDelay = 0;               //just in case  - using FastLED.delay instead..
 boolean _firstTimeSetupDone = false;          //starts false //this is mainly to catch an interrupt trigger that happens during setup, but is usefull for other things
 volatile boolean _onOff = false;              //this should init false, then get activated by input - on/off true/false

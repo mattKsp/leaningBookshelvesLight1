@@ -5,30 +5,30 @@
  * eg. for testing/demo porpoises
  */
  
-//void mode1() {
-//  //name should be sunrise!
-//    //sunRise();
-//
-//    //TEMP
-//    for(int i = ledSegment[0].first; i <= ledSegment[0].last; i++) {
-//      leds[i] = startColor_RGB;
-//    }
-//    fill_gradient_RGB(leds, ledSegment[1].first, CRGB(32, 32, 32), ledSegment[1].last, CRGB::Black);
-//    for(int i = ledSegment[2].first; i <= ledSegment[2].last; i++) {
-//      leds[i] = CRGB::Black;
-//    }
-//    fill_gradient_RGB(leds, ledSegment[3].first, CRGB::Black, ledSegment[3].last, CRGB(32, 32, 32) );
-//    //END TEMP
-//  
-//} //END mode1
-//
-//
-//void mode6() {
-//  
-//  //name should be sunset!
-//    fadeToBlackBy( leds, _ledNum, 100);
-//  
-//} //END mode6
+void mode1() {
+  //name is sunrise!
+  doSunRise();
+
+//  //TEMP
+//  for(int i = ledSegment[0].first; i <= ledSegment[0].last; i++) {
+//    leds[i] = startColor_RGB;
+//  }
+//  fill_gradient_RGB(leds, ledSegment[1].first, CRGB(32, 32, 32), ledSegment[1].last, CRGB::Black);
+//  for(int i = ledSegment[2].first; i <= ledSegment[2].last; i++) {
+//    leds[i] = CRGB::Black;
+//  }
+//  fill_gradient_RGB(leds, ledSegment[3].first, CRGB::Black, ledSegment[3].last, CRGB(32, 32, 32) );
+//  //END TEMP
+  
+} //END mode1
+
+
+void mode6() {
+  //name is sunset!
+  //fadeToBlackBy( leds, _ledNum, 100);   //TEMP
+  //doSunSet();
+  
+} //END mode6
 
 
 /*----------------------------set----------------------------*/
@@ -36,35 +36,36 @@
 void setSunRise(uint8_t hour, uint8_t mins) {
   //mode 0 = natural (set rise to realtime) - Not used yet!
   //mode 1 = set time aswell (mabye link to alarm array entry)
-  RTC.disableAlarms();                                                          //hmm.. power cuts? ..and how to specify 1 or both? write my own?
-  DateTime MyTimestamp;
-  MyTimestamp = RTC.read();                                                       //get an initialized timestamp to use
-  MyTimestamp.Hour = hour;
-  MyTimestamp.Minute = mins;
-  MyTimestamp.Second = 0;
+//  RTC.disableAlarms();                                                          //hmm.. power cuts? ..and how to specify 1 or both? write my own?
+//  DateTime MyTimestamp;
+//  MyTimestamp = RTC.read();                                                       //get an initialized timestamp to use
+////  MyTimestamp.Hour = hour;
+//  MyTimestamp.Minute = mins;
+//  MyTimestamp.Second = 0;
   
   //RTC.setAlarm(DS3231_Simple::ALARM_EVERY_MINUTE); 
   //RTC.setAlarm(MyTimestamp, DS3231_Simple::ALARM_MATCH_MINUTE);
-  RTC.setAlarm(MyTimestamp, DS3231_Simple::ALARM_DAILY);                          //sun rise - Alarm 2 - ALARM_DAILY (on the hour and minute)
+//  RTC.setAlarm(MyTimestamp, DS3231_Simple::ALARM_DAILY);                          //sun rise - Alarm 2 - ALARM_DAILY (on the hour and minute)
   
     //RTC.setAlarm(MyTimestamp, DS3231_Simple::ALARM_EVERY_SECOND); 
     //RTC.setAlarm(MyTimestamp, DS3231_Simple::ALARM_MATCH_SECOND); 
     //RTC.setAlarm(MyTimestamp, DS3231_Simple::ALARM_MATCH_SECOND_MINUTE_HOUR);       //sun set - Alarm 1 - ALARM_MATCH_SECOND_MINUTE_HOUR
   
-  #ifdef DEBUG
+  if (DEBUG) {
     Serial.println();
     Serial.print(F("void setSunRiseSet (rise/Alarm2) "));
     Serial.print(hour);
     Serial.print(":"); 
     Serial.print(mins);
     Serial.println();
-  #endif
+  }
 }
 
 /*----------------------------do----------------------------*/
 /*
  * sunrise/set states can be used by such as static/moving
  * eg. static could go straight to the end colours, or the frozen midpoint of the 'do' state
+ * eventually one would be able to use scroll wheels or sim to move throughout the animation, stop, reverse, etc.
  * 
  * //setup
  * beginning
@@ -73,8 +74,8 @@ void setSunRise(uint8_t hour, uint8_t mins) {
  */
 //unsigned long _sunRiseInterval = 0; // the time we need to wait //calculated at runtime
 //unsigned long _sunRisePreviousMillis = 0; // millis() returns an unsigned long.
-//
-//void sunRise() {
+
+void doSunRise() {
 //  //time to rise (ms)
 //  //start/end levels
 //  //number of steps (LED total)
@@ -161,6 +162,10 @@ void setSunRise(uint8_t hour, uint8_t mins) {
 //    //_sunRiseEnabled = false;                //reset
 //    //set next mode as morning or day
 //*/
-//  
-//} //END sunRise
+
+} //END doSunRise
+
+void doSunSet() {
+  //
+}
 

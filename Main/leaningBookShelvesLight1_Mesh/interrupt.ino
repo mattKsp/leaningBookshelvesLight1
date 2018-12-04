@@ -1,9 +1,9 @@
 /*----------------------------interrupt----------------------------*/
 //attachInterrupt(interruptPin, function, CHANGE);
-
+/*
 void setupInterrupts() {
-  pinMode(_DS3231interruptPin, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(_DS3231interruptPin), sunRiseSetInterrupt, FALLING);  //FALLING, RISING, CHANGE
+  pinMode(_i2cInterrupt1Pin, INPUT_PULLUP); //setup DS3231 interrupt pin
+  attachInterrupt(digitalPinToInterrupt(_i2cInterrupt1Pin), sunRiseSetInterrupt, FALLING);  //FALLING, RISING, CHANGE
 }
 
 void sunRiseSetInterrupt() {
@@ -16,9 +16,9 @@ void sunRiseSetInterrupt() {
     _sunRiseStateCur = 0;
     _onOff = true;
   }
-  #ifdef DEBUG
-    Serial.print(F("interrupt triggered"));
-    Serial.println();
-    blinkStatusLED();
-  #endif
+  if (DEBUG) {
+    serial.print(F("interrupt triggered"));
+    serial.println();
+  }
 }
+*/

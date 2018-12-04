@@ -4,12 +4,12 @@
  * 0 - glow     (static/moving)
  * 1 - sunrise  (static/moving)
  * 2 - morning  (static/moving)
- * 2 - day      (static/moving) (full bright/overcast/clearbluesky)
+ * 3 - day      (static/moving) (full bright/overcast/clearbluesky)
  * 4 - working  (static) (full bright) (colour temperature sub-mode)
  * 5 - evening  (static/moving)
  * 6 - sunset   (static/moving)
  * 7 - night    (static/moving)
- * 8 - changing (moving) (could use static to pause it?)
+ * 8 - effect   (moving) (could use static to pause it?)
  * 
  * gradient fade (top/mid/bot) (all can invert) (overlay/fx?)
  * moveable/resizable bright bar (overlay/fx?) (might use brightness +/- intputs to move up/down)
@@ -54,17 +54,10 @@ void mode0() {
   }
 }
 
-void mode1() {
-  //name should be sunrise!
-  for(int i = 0; i < _ledNumOfStrips; i++) {
-    //fill_solid( leds[i], _ledNumPerStrip, CRGB(15, 15, 5));
-    //fill_gradient_RGB(leds[i], ledSegment[0].first, CRGB::Yellow, ledSegment[_segmentTotal/2].first, CRGB::Blue, ledSegment[_segmentTotal-1].last, CRGB::Black );
-    fill_gradient_RGB(leds[i], ledSegment[0].first, CRGB::Yellow, ledSegment[_segmentTotal-1].last, CRGB::Black );
-  }
-}
+//mode1 - see 'sunRiseSet'
 
 void mode2() {
-  //name should be morning!
+  //name is morning!
   for(int i = 0; i < _ledNumOfStrips; i++) {
     //fill_solid( leds[i], _ledNumPerStrip, CRGB(0, 0, 255));
     fill_gradient_RGB(leds[i], ledSegment[0].first, CRGB::Yellow, ledSegment[_segmentTotal-1].last, CRGB::Blue );
@@ -72,7 +65,7 @@ void mode2() {
 }
 
 void mode3() {
-  //name should be day!
+  //name is day!
   for(int i = 0; i < _ledNumOfStrips; i++) {
     //fill_solid( leds[i], _ledNumPerStrip, CRGB(255, 255, 0));
     //fill_gradient_RGB(leds[i], ledSegment[0].first, CRGB::Green, ledSegment[_segmentTotal/2].first, CRGB::Blue, ledSegment[_segmentTotal-1].last, CRGB::Yellow );
@@ -81,13 +74,15 @@ void mode3() {
 }
 
 void mode4() {
-  //name should be working!
+  //name is working!
+  //full-bright
   //isStatic should be true
   for(int i = 0; i < _ledNumOfStrips; i++) {
     fill_solid( leds[i], _ledNumPerStrip, CRGB::White);
   }
+  
+//add sub temperature modes later..
 /*
- //sub temperature modes later..
   if(_mode0_sub == 0) {
     FastLED.setTemperature( TEMPERATURE_0 ); //set first temperature  //..moved to setup ..might work ???
     //fill_solid( leds, _ledNum, TEMPERATURE_0 );
@@ -99,51 +94,23 @@ void mode4() {
   } else if(_mode0_sub == 2) {
     FastLED.setTemperature( TEMPERATURE_2 );
     //fill_solid( leds, _ledNum, TEMPERATURE_2 );
-    leds[0] = TEMPERATURE_3;
-  } else if(_mode0_sub == 3) {
-    FastLED.setTemperature( TEMPERATURE_3 );
-    //fill_solid( leds, _ledNum, TEMPERATURE_3 );
-    leds[0] = TEMPERATURE_3;
-  } else if(_mode0_sub == 4) {
-    FastLED.setTemperature( TEMPERATURE_4 );
-    //fill_solid( leds, _ledNum, TEMPERATURE_4 );
-    leds[0] = TEMPERATURE_4;
-  } else if(_mode0_sub == 5) {
-    FastLED.setTemperature( TEMPERATURE_5 );
-    //fill_solid( leds, _ledNum, TEMPERATURE_5 );
-    leds[0] = TEMPERATURE_5;
-  } else if(_mode0_sub == 6) {
-    FastLED.setTemperature( TEMPERATURE_6 );
-    //fill_solid( leds, _ledNum, TEMPERATURE_6 );
-    leds[0] = TEMPERATURE_6;
-  } else if(_mode0_sub == 7) {
-    FastLED.setTemperature( TEMPERATURE_7 );
-    //fill_solid( leds, _ledNum, TEMPERATURE_7 );
-    leds[0] = TEMPERATURE_7;
-  } else if(_mode0_sub == 8) {
-    FastLED.setTemperature( TEMPERATURE_8 );
-    //fill_solid( leds, _ledNum, TEMPERATURE_8 );
-    leds[0] = TEMPERATURE_8;
+    leds[0] = TEMPERATURE_2;
   }
-  */
+*/
+
 }
 
 void mode5() {
-  //name should be evening!
+  //name is evening!
   for(int i = 0; i < _ledNumOfStrips; i++) {
     fill_solid( leds[i], _ledNumPerStrip, CRGB(128, 64, 64));
   }
 }
 
-void mode6() {
-  //name should be sunset!
-  for(int i = 0; i < _ledNumOfStrips; i++) {
-    fill_gradient_RGB(leds[i], ledSegment[0].first, CRGB::Orange, ledSegment[_segmentTotal-1].last, CRGB::Black );
-  }
-}
+//mode6 - see 'sunRiseSet'
 
 void mode7() {
-  //name should be night!
+  //name is night!
   //top fade down
   for(int i = 0; i < _ledNumOfStrips; i++) {
     fill_gradient_RGB(leds[i], ledSegment[_segmentTotal-1].last, CRGB::White, ledSegment[0].first, CRGB::Black );
@@ -151,12 +118,9 @@ void mode7() {
 }
 
 void mode8() {
-  //name should be changing!
-  for(int i = 0; i < _ledNumOfStrips; i++) {
-    fill_solid( leds[i], _ledNumPerStrip, CRGB(0, 0, 255));
-  }
+  //name is changing!
+//  for(int i = 0; i < _ledNumOfStrips; i++) {
+//    fill_solid( leds[i], _ledNumPerStrip, CRGB(0, 0, 255));
+//  }
 }
-
-
-
 
