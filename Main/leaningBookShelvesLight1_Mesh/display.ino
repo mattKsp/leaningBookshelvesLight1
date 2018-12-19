@@ -2,7 +2,7 @@
 
 void setupLEDs() {
   
-  FastLED.setMaxPowerInVoltsAndMilliamps(5, 5700);  //limit power draw to 5.7A at 5v (with 6A power supply this gives us a bit of head room for board, lights etc.)
+  FastLED.setMaxPowerInVoltsAndMilliamps(5, MAX_POWER_DRAW);
 
   FastLED.addLeds<WS2812B, _ledDOut0Pin, GRB>(leds[0], _ledNumPerStrip).setCorrection( TypicalSMD5050 );
   FastLED.addLeds<WS2812B, _ledDOut1Pin, GRB>(leds[1], _ledNumPerStrip).setCorrection( TypicalSMD5050 );

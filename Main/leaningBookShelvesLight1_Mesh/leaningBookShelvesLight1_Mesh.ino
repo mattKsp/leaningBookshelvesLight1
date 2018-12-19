@@ -23,21 +23,23 @@
 #include <EEPROM.h>                           // a few saved settings
 #include <FastLED.h>                          // WS2812B LED strip control and effects
 #include <Wire.h>                             // include, but do not need to initialise - for DS3231 & CAP1296
-//#include <CAP1296.h>                          // Microchip capacitive touch IC - CAP1296 (6 sensors)
+#include <CAP1296.h>                          // Microchip capacitive touch IC - CAP1296 (6 sensors)
 #include <CapacitiveSensor.h> //capacitive touch sensors
-#include <PubSubClient.h>                     // https://github.com/knolleary/pubsubclient
+//#include <PubSubClient.h>                     // https://github.com/knolleary/pubsubclient
 #include "painlessMesh.h"
 #include <MT_LightControlDefines.h>
 
 
 /*----------------------------system----------------------------*/
 const String _progName = "leaningBookshelvesLight1_Mesh";
-const String _progVers = "0.301";             // reverted touch back to basic
+const String _progVers = "0.310";             // MQTT fix
 //const int _mainLoopDelay = 0;               // just in case  - using FastLED.delay instead..
 #define DEBUG 1                               // 0 or 1
 boolean _debugOverlay = false;                // show debug overlay (eg. show segment endpoints)
 boolean _firstTimeSetupDone = false;          // starts false //this is mainly to catch an interrupt trigger that happens during setup, but is usefull for other things
 volatile boolean _onOff = false;              // this should init false, then get activated by input - on/off true/false
+bool shouldSaveSettings = false; // flag for saving data
+bool runonce = true; // flag for sending states when first mesh conection
 
 /*----------------------------pins----------------------------*/
 //serial TX pin = 0
@@ -83,7 +85,7 @@ int _sunSetStateCur = 0;                        // current sunset internal state
 /*----------------------------buttons----------------------------*/
 
 /*----------------------------touch sensors----------------------------*/
-//CAP1296 touch;                                  // CAP1296 on I2C
+CAP1296 touch;                                  // CAP1296 on I2C
 CapacitiveSensor _touch0 = CapacitiveSensor(_capSenseSendPin,_capSense0Pin);  //on/off
 CapacitiveSensor _touch1 = CapacitiveSensor(_capSenseSendPin,_capSense1Pin);  //mode
 //CapacitiveSensor _touch2 = CapacitiveSensor(_capSenseSendPin,_capSense2Pin);  //sub-mode
@@ -101,6 +103,7 @@ long _touchPrevMillis[5] = { 0, 0, 0, 0, 0 };                          //how lon
 boolean _touchToggled[5] = { false, false, false, false, false };
 
 /*----------------------------LED----------------------------*/
+#define MAX_POWER_DRAW 5700                     //limit power draw to 5.7A at 5v (with 6A power supply this gives us a bit of head room for board, lights etc.)
 typedef struct {
   byte first;
   byte last;
@@ -138,11 +141,12 @@ int _ledState = LOW;                            // use to toggle LOW/HIGH (ledSt
 int _colorTempCur = 5;                          // current colour temperature       ???
 
 /*----------------------------Mesh----------------------------*/
-char mesh_name[] = MESH_NAME;
-char mesh_password[] = MESH_PASSWORD;
-uint16_t mesh_port = MESH_PORT;
 painlessMesh  mesh;
+//char mesh_name[] = MESH_NAME;
+//char mesh_password[] = MESH_PASSWORD;
+//uint16_t mesh_port = MESH_PORT;
 String _modeString = "Glow";
+uint32_t id = DEVICE_ID_BRIDGE1;
 
 void receivedCallback(uint32_t from, String &msg ) {
   if (DEBUG) { Serial.printf("leaningBookshelvesLight1_Mesh: Received from %u msg=%s\n", from, msg.c_str()); }
@@ -150,6 +154,13 @@ void receivedCallback(uint32_t from, String &msg ) {
 }
 
 void newConnectionCallback(uint32_t nodeId) {
+  if (runonce == true) {
+    publishState(false);
+    publishBrightness(false);
+    //publishRGB(false);
+    //publishMode(false);
+    runonce = false;
+  }
   if (DEBUG) { Serial.printf("--> leaningBookshelvesLight1_Mesh: New Connection, nodeId = %u\n", nodeId); }
 }
 
@@ -194,8 +205,9 @@ void setup() {
   //everything done? ok then..
     Serial.print(F("Setup done"));
     Serial.println("-----");
-    Serial.print("Node ID: ");
-    Serial.println(mesh.getNodeId());
+    Serial.print(F("Device Node ID is "));
+    String s = String(mesh.getNodeId());
+    Serial.println(s);
     Serial.println("-----");
     Serial.println("");
   }
@@ -221,6 +233,14 @@ void loop() {
   if (_debugOverlay) {
     checkSegmentEndpoints();
     //showColorTempPx();
+  }
+  
+  EVERY_N_SECONDS(30) {                           // too much ???
+    if (shouldSaveSettings == true)
+    { 
+      //saveSettings(); 
+      shouldSaveSettings = false; 
+    }
   }
 
   FastLED.show();                               // send all the data to the strips
