@@ -23,15 +23,16 @@
 #include <EEPROM.h>                           // a few saved settings
 #include <FastLED.h>                          // WS2812B LED strip control and effects
 #include <Wire.h>                             // include, but do not need to initialise - for DS3231 & CAP1296
-#include <CAP1296.h>                          // Microchip capacitive touch IC - CAP1296 (6 sensors)
-#include <PubSubClient.h>                         //https://github.com/knolleary/pubsubclient
+//#include <CAP1296.h>                          // Microchip capacitive touch IC - CAP1296 (6 sensors)
+#include <CapacitiveSensor.h> //capacitive touch sensors
+#include <PubSubClient.h>                     // https://github.com/knolleary/pubsubclient
 #include "painlessMesh.h"
 #include <MT_LightControlDefines.h>
 
 
 /*----------------------------system----------------------------*/
 const String _progName = "leaningBookshelvesLight1_Mesh";
-const String _progVers = "0.30";              // split to Standalone/WIFI/Mesh
+const String _progVers = "0.301";             // reverted touch back to basic
 //const int _mainLoopDelay = 0;               // just in case  - using FastLED.delay instead..
 #define DEBUG 1                               // 0 or 1
 boolean _debugOverlay = false;                // show debug overlay (eg. show segment endpoints)
@@ -51,6 +52,13 @@ const int _ledDOut2Pin = 13;                  // DOut 2 -> LED strip 2 DIn   - l
 //const int _ledDOut4Pin = 2;                   // DOut 4 -> LED strip 4 DIn   - SPARE
 const int _i2cSDApin = 4;                     // SDA (D2)
 const int _i2cSCLpin = 5;                     // SCL (D1)
+
+const int _capSenseSendPin = 7;               // capacitive touch sensor (send)
+const int _capSense0Pin = 8;                  // on/off (receive) - note: all other touch sensors will trigger 'on' if 'off', aswell as this pin..
+const int _capSense1Pin = 9;                  // mode - capacitive touch sensor (receive)
+//const int _capSense2Pin = 10;                 // sub-mode - capacitive touch sensor (receive) - not in use yet
+//const int _capSense3Pin = 11;                 // volume up - capacitive touch sensor (receive)
+//const int _capSense4Pin = 12;                 // volume down - capacitive touch sensor (receive)
 
 /*----------------------------modes----------------------------*/
 const int _modeNum = 9;
@@ -75,7 +83,22 @@ int _sunSetStateCur = 0;                        // current sunset internal state
 /*----------------------------buttons----------------------------*/
 
 /*----------------------------touch sensors----------------------------*/
-CAP1296 touch;                                  // CAP1296 on I2C
+//CAP1296 touch;                                  // CAP1296 on I2C
+CapacitiveSensor _touch0 = CapacitiveSensor(_capSenseSendPin,_capSense0Pin);  //on/off
+CapacitiveSensor _touch1 = CapacitiveSensor(_capSenseSendPin,_capSense1Pin);  //mode
+//CapacitiveSensor _touch2 = CapacitiveSensor(_capSenseSendPin,_capSense2Pin);  //sub-mode
+//CapacitiveSensor _touch3 = CapacitiveSensor(_capSenseSendPin,_capSense3Pin);  //brightness up
+//CapacitiveSensor _touch4 = CapacitiveSensor(_capSenseSendPin,_capSense4Pin);  //brightness down
+
+byte _touchSensorRes = 20;  //sample/sensor resolution - higher is better but slower to read
+long _touchSensorThreshold = 100;  //??? no idea - start at 100 and test  //unsigned long   //1 for all at the moment
+
+//1,000 microseconds in a millisecond and 1,000,000 microseconds in a second
+//eg. 6000 millisecond = 0.6 milliseconds = 0.0006 seconds
+//micros() may be too small, might end up using millis()
+const long _touchDeBounceInterval = 500;                            //interval to de-bounce in milliseconds    //const int 
+long _touchPrevMillis[5] = { 0, 0, 0, 0, 0 };                          //how long between 'bounces' //unsigned long
+boolean _touchToggled[5] = { false, false, false, false, false };
 
 /*----------------------------LED----------------------------*/
 typedef struct {
@@ -119,7 +142,7 @@ char mesh_name[] = MESH_NAME;
 char mesh_password[] = MESH_PASSWORD;
 uint16_t mesh_port = MESH_PORT;
 painlessMesh  mesh;
-Scheduler userScheduler; // to control your personal task ??? prob never gonna use
+String _modeString = "Glow";
 
 void receivedCallback(uint32_t from, String &msg ) {
   if (DEBUG) { Serial.printf("leaningBookshelvesLight1_Mesh: Received from %u msg=%s\n", from, msg.c_str()); }
@@ -141,10 +164,6 @@ void nodeTimeAdjustedCallback(int32_t offset) {
 void delayReceivedCallback(uint32_t from, int32_t delay) {
   if (DEBUG) { Serial.printf("Delay to node %u is %d us\n", from, delay); }
 }
-
-//const PROGMEM char* THESE_LIGHTS_ON = "ON";
-//const PROGMEM char* THESE_LIGHTS_OFF = "OFF";
-String _modeString = "Glow";
 
 
 /*----------------------------MAIN----------------------------*/
