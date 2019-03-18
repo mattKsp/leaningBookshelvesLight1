@@ -5,14 +5,16 @@
  */
 void incrementPresetSlot() {
   _modePresetSlotCur += 1;
-  incDecPresSlot_prtB();
+  presetSlot_prtB();
 }
 void decrementPresetSlot() {
   _modePresetSlotCur -= 1;
-  incDecPresSlot_prtB();
+  presetSlot_prtB();
 }
-void incDecPresSlot_prtB() {
-  if(_modePresetSlotCur >= _modePresetSlotNum){ _modePresetSlotCur = 0; }  //TEMP rollover catch
+void presetSlot_prtB() {
+  if(_modePresetSlotCur >= _modePresetSlotNum || _modePresetSlotCur < 0) { 
+    _modePresetSlotCur = 0;                     //TEMP rollover catch
+  }
   _modeCur = _modePreset[_modePresetSlotCur];
 }
 
@@ -69,4 +71,5 @@ void showColorTempPx() {
   leds[0][0] = _colorTempCur;                  //show indicator pixel
   //leds[0] = TEMPERATURE_1;                  //show indicator pixel
 }
+
 

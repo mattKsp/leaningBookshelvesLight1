@@ -1,7 +1,16 @@
 /*----------------------------user input----------------------------*/
 
 void setupUserInputs() {
-  touch.begin();
+  s32 ret = 0;                                  // s32 = int
+  if(mpr121.begin() < 0)
+  {
+    if (DEBUG) { Serial.println("Can't detect device!!!!"); }
+  }
+  else
+  {
+    if (DEBUG) { Serial.println("mpr121 init OK!"); }
+  }
+  delay(100);
 }
 
 /*
@@ -9,255 +18,93 @@ void setupUserInputs() {
  * called from main loop
  */
 void loopUserInputs() {
-  touchSensorsSimple();
-  //touchSensors();                             // CAP1296
+  touchSensorsMPR121();
 }
 
-/*----------------------------touch sensors----------------------------*/
-void touchSensorsSimple() {
-  //long _touch0read = _touch0.capacitiveSensor(_touchSensorRes);     //mode
-  //long touch1read = _touch1.capacitiveSensor(_touchSensorRes);     //sub-mode
-  //long _touch2read = _touch2.capacitiveSensor(_touchSensorRes);     //brightness up
-  //long _touch3read = _touch3.capacitiveSensor(_touchSensorRes);     //brightness down
-
-/*---------------touch sensor 0 - on/off--------------*/
-  if(_touchToggled[0] == false) {
-    long touch0read = _touch0.capacitiveSensor(_touchSensorRes);     //mode
-    #ifdef DEBUG
-      //Serial.print(touch0read);
-      //Serial.print(" 0toggled == false");
-      //Serial.println();
-    #endif
-    if(touch0read > _touchSensorThreshold) {
-      _touchToggled[0] = true;                      //toggle so we can block re-bounce
-      _touchPrevMillis[0] = millis();               //store the current time
-      
-      _onOff = !_onOff;                         //flip the lights
-         
-      #ifdef DEBUG
-        Serial.print(F("0touch 0 triggered"));
-        Serial.println();
-        Serial.print(F("on/off = "));
-        Serial.print(_onOff);
-        Serial.println();
-      #endif
-      
-    } //END _touch0read > _touchSensorThreshold
-  } //END _touchToggled[0] == false
-    
-/*---------------touch sensor 1 - mode--------------*/
-  if(_touchToggled[1] == false) {
-    long touch1read = _touch1.capacitiveSensor(_touchSensorRes);     //mode
-    #ifdef DEBUG
-      //Serial.print(touch1read);
-      //Serial.print(" 1toggled == false");
-      //Serial.println();
-    #endif
-    if(touch1read > _touchSensorThreshold) {
-      _touchToggled[1] = true;                    //toggle so we can block re-bounce
-      //_touch0prevMicros = micros();               //store the current time
-      _touchPrevMillis[1] = millis();               //store the current time
-      
-      if(_onOff == false) {
-        _onOff = true;  //if the lights are already off, then turn them on
-        //don't need to change mode, as we are already in a mode, just switched on
-      } else {
-        incrementPresetSlot();
-        //write cur mode to memory ???
-      } //END onOff
-      
-      #ifdef DEBUG
-        Serial.print(F("1touch 1 triggered"));
-        Serial.println();
-        Serial.print(F("Mode = "));
-        Serial.print(_modeCur);
-        Serial.println();
-      #endif
-    } //END _touch1read > _touchSensorThreshold
-  } //END _touchToggled[1] == false
-
-/*---------------touch sensor 3 - brightness up--------------*/
-//  if(_touchToggled[2] == false) {
-//    long touch2read = _touch2.capacitiveSensor(_touchSensorRes);     //mode
-//    #ifdef DEBUG
-//      //Serial.print(touch0read);
-//      //Serial.print(" 2toggled == false");
-//      //Serial.println();
-//    #endif
-//    if(touch2read > _touchSensorThreshold) {
-//      _touchToggled[2] = true;                      //toggle so we can block re-bounce
-//      _touchPrevMillis[2] = millis();               //store the current time
-//
-//      increaseBrightness();
-//      FastLED.setBrightness(_ledGlobalBrightnessCur);
-//         
-//      #ifdef DEBUG
-//        Serial.print(F("2touch 2 triggered"));
-//        Serial.println();
-//        Serial.print(F("brightness = "));
-//        Serial.print(_ledGlobalBrightnessCur);
-//        Serial.println();
-//      #endif
-//      
-//    } //END _touch2read > _touchSensorThreshold
-//  } //END _touchToggled[2] == false
-//  
-/*---------------touch sensor 4 - brightness down--------------*/
-//  if(_touchToggled[3] == false) {
-//    long touch3read = _touch3.capacitiveSensor(_touchSensorRes);     //mode
-//    #ifdef DEBUG
-//      //Serial.print(touch3read);
-//      //Serial.print(" 3toggled == false");
-//      //Serial.println();
-//    #endif
-//    if(touch3read > _touchSensorThreshold) {
-//      _touchToggled[3] = true;                      //toggle so we can block re-bounce
-//      _touchPrevMillis[3] = millis();               //store the current time
-//      
-//      decreaseBrightness();
-//      FastLED.setBrightness(_ledGlobalBrightnessCur);
-//      
-//      #ifdef DEBUG
-//        Serial.print(F("3touch 3 triggered"));
-//        Serial.println();
-//        Serial.print(F("brightness = "));
-//        Serial.print(_ledGlobalBrightnessCur);
-//        Serial.println();
-//      #endif
-//      
-//    } //END _touch3read > _touchSensorThreshold
-//  } //END _touchToggled[3] == false
-//   
- 
-  for(int i = 0; i < 5; i++) {
-    if(_touchToggled[i] == true) {
-      long touchcurMillis = millis();            //get current micros() //unsigned long
-      if((long) (touchcurMillis - _touchPrevMillis[i]) >= _touchDeBounceInterval) {  // if((unsigned long)..
-        _touchToggled[i] = false;                 //reset
-      }
-    }
-  }
+/*---------------touch sensors MPR121--------------*/
+void touchSensorsMPR121() {
+  u16 result = 0;                               // u16 = unsigned short
+  u16 filtered_data_buf[CHANNEL_NUM] = { 0 };
+  u8 baseline_buf[CHANNEL_NUM] = { 0 };         // u8 = unsigned char
   
-}
+  result = mpr121.check_status_register();
 
-void touchSensors() {
-  int newTouch = 0;                           //'0' is nothing, range is 1-6
-  //int newRelease = 0;                         //'0' is nothing, range is 1-6
-  //mode
-  //sub-mode
-  //
-  //brightness up
-  //brightness down
+  mpr121.get_filtered_reg_data(&result, filtered_data_buf);
 
-//mabye put in a delay of 50 for all this touch stuff.. ???
-  if (touch.touchStatusChanged()) {
-    touch.updateTouchData();
-    //we are not using multi-touch, so there should only be 1 sensor triggered at a time..
-    //do we want it on 'touch', or on 'release' ???
-    //..touch. leave fancy holds for later..
-    for (int i = 0; i < 6; i++) {
-      if (touch.isNewTouch(i)) {
-        newTouch = i;
-        if (DEBUG) {
-          Serial.println("Touch sensor " + String(i) + " was just touched.");
+  for(int i = 0; i < CHANNEL_NUM; i++)
+  {
+    if(result&(1<<i))                             /*key i is pressed!!*/
+    {
+      if(0 == touch_status_flag[i])             
+      { 
+        touch_status_flag[i] = 1;
+
+        if (i == 0) {
+          touch0pressed();
+        } else if (i == 1) {
+          touch1pressed();
+        } else if (i == 2) {
+          touch2pressed();
+        } else if (i == 3) {
+          touch3pressed();
+        } else if (i == 4) {
+          touch4pressed();
+        }
+        
+        if (DEBUG) { 
+          Serial.print("key ");
+          Serial.print(i);
+          Serial.println("pressed");
         }
       }
-//      if (touch.isNewRelease(i)) {
-//        newRelease = i;
-//        if (DEBUG) {
-//          Serial.println("Touch sensor " + String(i) + " was just released.");
-//        }
-//      }
+    }
+    else
+    {
+      if(1 == touch_status_flag[i])
+      {
+        touch_status_flag[i] = 0;
+
+        if (DEBUG) { 
+          Serial.print("key ");
+          Serial.print(i);
+          Serial.println("release");
+        }
+      }
     }
   }
+  //delay(50);                                  // ???
+}
 
-  switch (newTouch) {
+/*---------------touch sensors MPR121 - pressed--------------*/
+void touch0pressed() {                          // touch sensor 0 - on/off
+  _onOff = !_onOff;                             // flip the lights
+}
+void touch1pressed() {                          // touch sensor 1 - mode up
+  if(_onOff == false) {
+    _onOff = true;  //if the lights are already off, then turn them on
+    //don't need to change mode, as we are already in a mode, just switched on
+  } else {
+    incrementPresetSlot();
+  }
+}
+void touch2pressed() {                          // touch sensor 2 - mode down
+  if(_onOff == false) {
+    _onOff = true;  //if the lights are already off, then turn them on
+    //don't need to change mode, as we are already in a mode, just switched on
+  } else {
+    decrementPresetSlot();
+  }
+}
+void touch3pressed() {                          // touch sensor 3 - sub-mode cycle
+  // sub-modes eg. cycle temperature modes (not implemented yet)
+}
+void touch4pressed() {                          // touch sensor 4 - brightness up
+  //increaseBrightness();
+}
+void touch5pressed() {                          // touch sensor 5 - brightness down
+  //decreaseBrightness();
+}
 
-    case 1:
-      /*---------------touch sensor 1 - on/off--------------*/
-      _onOff = !_onOff;                         //flip the lights
-      if (DEBUG) {
-        Serial.print(F("touch 1 triggered"));
-        Serial.println();
-        Serial.print(F("on/off = "));
-        Serial.print(_onOff);
-        Serial.println();
-      }
-      break;
+/*---------------touch sensors MPR121 - released--------------*/
 
-    case 2:
-      /*---------------touch sensor 2 - mode--------------*/
-      if(_onOff == false) {
-        _onOff = true;  //if the lights are already off, then turn them on
-        //don't need to change mode, as we are already in a mode, just switched on
-      } else {
-        incrementPresetSlot();
-        //write cur mode to memory ???
-      } //END onOff
-      
-      if (DEBUG) {
-        Serial.print(F("touch 2 triggered"));
-        Serial.println();
-        Serial.print(F("Mode = "));
-        Serial.print(_modeCur);
-        Serial.println();
-      }
-      break;
-
-    case 3:
-      /*---------------touch sensor 3 - --------------*/
-      
-      if (DEBUG) {
-        Serial.print(F("touch 3 triggered"));
-        Serial.println();
-        Serial.print(F(" = "));
-        //Serial.print();
-        Serial.println();
-      }
-      break;
-
-    case 4:
-      /*---------------touch sensor 4 - brightness up--------------*/
-      increaseBrightness();
-      //FastLED.setBrightness(_ledGlobalBrightnessCur);                 // ???
-         
-      if (DEBUG) {
-        Serial.print(F("touch 4 triggered"));
-        Serial.println();
-        Serial.print(F("brightness = "));
-        Serial.print(_ledGlobalBrightnessCur);
-        Serial.println();
-      }
-      break;
-
-    case 5:
-      /*---------------touch sensor 5 - brightness down--------------*/
-      decreaseBrightness();
-      //FastLED.setBrightness(_ledGlobalBrightnessCur);                 // ???
-      
-      if (DEBUG) {
-        Serial.print(F("touch 5 triggered"));
-        Serial.println();
-        Serial.print(F("brightness = "));
-        Serial.print(_ledGlobalBrightnessCur);
-        Serial.println();
-      }
-      break;
-
-    case 6:
-      /*---------------touch sensor 6--------------*/
-      
-      if (DEBUG) {
-        Serial.print(F("touch 6 triggered"));
-        Serial.println();
-        Serial.print(F(" = "));
-        //Serial.print();
-        Serial.println();
-      }
-      break;
-
-  } //END switch case
-
-
-} //END touchSensors
 

@@ -17,6 +17,10 @@
  * D7  13  IO, MOSI  GPIO13
  * D8  15  IO, 10k Pull-down, SS GPIO15
  * 
+ * 
+ * Grove - 12 Key Capacitive I2C Touch Sensor V2 (MPR121)
+ * http://wiki.seeedstudio.com/Grove-12_Key_Capacitive_I2C_Touch_Sensor_V2-MPR121/
+ * 
  */
 
 /*
@@ -121,3 +125,4 @@ void showParsedData() {
 */
 
 //..
+

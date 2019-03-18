@@ -16,3 +16,4 @@ void setupLEDs() {
   FastLED.setTemperature(UncorrectedTemperature);   //set first temperature
 
 }
+
