@@ -53,7 +53,7 @@ void checkSegmentEndpoints() {
   for(int i = 0; i < _ledNumOfStrips; i++) {
     fill_solid( leds[i], _ledNumPerStrip, CRGB(0,0,0));
     
-    for(int j = 0; j < _segmentTotal; j++) {
+    for(int j = 1; j < _segmentTotal; j++) {
       leds[i][ledSegment[_segmentTotal].first] = CRGB(i*20, j*50, 0);
       leds[i][ledSegment[_segmentTotal].last] = CRGB(0, j*50, i*20);
     }
@@ -68,7 +68,7 @@ void checkSegmentEndpoints() {
  This sets the first LED to show the current colour temperature
  */
 void showColorTempPx() {
-  leds[0][0] = _colorTempCur;                  //show indicator pixel
+  leds[0][1] = _colorTempCur;                  //show indicator pixel
   //leds[0] = TEMPERATURE_1;                  //show indicator pixel
 }
 

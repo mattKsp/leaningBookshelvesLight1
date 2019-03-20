@@ -30,14 +30,14 @@
 
 /*----------------------------system----------------------------*/
 const String _progName = "leaningBookshelvesLight1_Mesh";
-const String _progVers = "0.32";              // Replaced capacitive touch with MPR121 (I2C)
-//const int _mainLoopDelay = 0;               // just in case  - using FastLED.delay instead..
+const String _progVers = "0.33";              // added blank led to start of array for level shifting hack and debug status
 #define DEBUG 1                               // 0 or 1
 boolean _debugOverlay = false;                // show debug overlay (eg. show segment endpoints)
 boolean _firstTimeSetupDone = false;          // starts false //this is mainly to catch an interrupt trigger that happens during setup, but is usefull for other things
 volatile boolean _onOff = false;              // this should init false, then get activated by input - on/off true/false
 bool shouldSaveSettings = false; // flag for saving data
 bool runonce = true; // flag for sending states when first mesh conection
+//const int _mainLoopDelay = 0;               // just in case  - using FastLED.delay instead..
 
 /*----------------------------pins----------------------------*/
 //serial TX pin = 0
@@ -87,23 +87,37 @@ typedef struct {
   byte total;
 } LED_SEGMENT;
 const int _ledNumOfStrips = 3;                // 3x LED strips (12, 34, 34)  (not using all 5 yet)
-const int _ledNumPerStrip = 35;               // Xm strip with LEDs
-const int _segmentTotal = 10;                 // total segments (shelves) on each strip - not sure ever use this, check  !!!
+const int _ledNumPerStrip = 36;               // Xm strip with LEDs (1 + 35)
+const int _segmentTotal = 11;                 // total segments (shelves) on each strip (1 + 10)
 const int _ledGlobalBrightness = 255;         // global brightness - use this to cap the brightness
 int _ledGlobalBrightnessCur = 255;            // current global brightness - adjust this one!
 int _ledBrightnessIncDecAmount = 10;          // the brightness amount to increase or decrease
 #define UPDATES_PER_SECOND 120                // main loop FastLED show delay //100
+//need to add 1 led to the beginning to use as a blank to jump from 3.3 to 5v (cheap hack for level shifting)
+//LED_SEGMENT ledSegment[_segmentTotal] = { 
+//  { 0, 0, 1 }, 
+//  { 1, 5, 5 }, 
+//  { 6, 10, 5 },
+//  { 11, 14, 4 },
+//  { 15, 18, 4 },
+//  { 19, 22, 4 },
+//  { 23, 25, 3 },
+//  { 25, 27, 3 },
+//  { 28, 30, 3 },
+//  { 31, 34, 4 }
+//};
 LED_SEGMENT ledSegment[_segmentTotal] = { 
-  { 0, 0, 1 }, 
-  { 1, 5, 5 }, 
-  { 6, 10, 5 },
-  { 11, 14, 4 },
-  { 15, 18, 4 },
-  { 19, 22, 4 },
-  { 23, 25, 3 },
-  { 25, 27, 3 },
-  { 28, 30, 3 },
-  { 31, 34, 4 }
+  { 0, 0, 1 }, //blank for level shifting hack and debug status
+  { 1, 1, 1 }, 
+  { 2, 6, 5 }, 
+  { 7, 11, 5 },
+  { 12, 15, 4 },
+  { 16, 19, 4 },
+  { 20, 23, 4 },
+  { 24, 26, 3 },
+  { 27, 29, 3 },
+  { 30, 32, 3 },
+  { 33, 35, 3 }
 };
 CHSV startColor( 144, 70, 64 );
 CHSV endColor( 31, 71, 69 );

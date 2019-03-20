@@ -50,7 +50,7 @@ void mode0() {
   //name should be glow!
   //bot fade up
   for(int i = 0; i < _ledNumOfStrips; i++) {
-    fill_gradient_RGB(leds[i], ledSegment[0].first, CRGB(32, 32, 32), ledSegment[_segmentTotal-1].last, CRGB::Black );
+    fill_gradient_RGB(leds[i], ledSegment[1].first, CRGB(32, 32, 32), ledSegment[_segmentTotal-1].last, CRGB::Black );
   }
 }
 
@@ -60,7 +60,7 @@ void mode2() {
   //name is morning!
   for(int i = 0; i < _ledNumOfStrips; i++) {
     //fill_solid( leds[i], _ledNumPerStrip, CRGB(0, 0, 255));
-    fill_gradient_RGB(leds[i], ledSegment[0].first, CRGB::Yellow, ledSegment[_segmentTotal-1].last, CRGB::Blue );
+    fill_gradient_RGB(leds[i], ledSegment[1].first, CRGB::Yellow, ledSegment[_segmentTotal-1].last, CRGB::Blue );
   }
 }
 
@@ -69,7 +69,7 @@ void mode3() {
   for(int i = 0; i < _ledNumOfStrips; i++) {
     //fill_solid( leds[i], _ledNumPerStrip, CRGB(255, 255, 0));
     //fill_gradient_RGB(leds[i], ledSegment[0].first, CRGB::Green, ledSegment[_segmentTotal/2].first, CRGB::Blue, ledSegment[_segmentTotal-1].last, CRGB::Yellow );
-    fill_gradient_RGB(leds[i], ledSegment[0].first, CRGB::Green, ledSegment[_segmentTotal-1].last, CRGB::Yellow );
+    fill_gradient_RGB(leds[i], ledSegment[1].first, CRGB::Green, ledSegment[_segmentTotal-1].last, CRGB::Yellow );
   }
 }
 
@@ -78,7 +78,8 @@ void mode4() {
   //full-bright
   //isStatic should be true
   for(int i = 0; i < _ledNumOfStrips; i++) {
-    fill_solid( leds[i], _ledNumPerStrip, CRGB::White);
+    fill_solid( leds[i], _ledNumPerStrip, CRGB::White);     // ???
+    leds[i][0] = CRGB::Black;                                     // hack
   }
   
 //add sub temperature modes later..
@@ -104,6 +105,7 @@ void mode5() {
   //name is evening!
   for(int i = 0; i < _ledNumOfStrips; i++) {
     fill_solid( leds[i], _ledNumPerStrip, CRGB(128, 64, 64));
+    leds[i][0] = CRGB::Black;                                     // hack
   }
 }
 
@@ -113,7 +115,7 @@ void mode7() {
   //name is night!
   //top fade down
   for(int i = 0; i < _ledNumOfStrips; i++) {
-    fill_gradient_RGB(leds[i], ledSegment[_segmentTotal-1].last, CRGB::White, ledSegment[0].first, CRGB::Black );
+    fill_gradient_RGB(leds[i], ledSegment[_segmentTotal-1].last, CRGB::White, ledSegment[1].first, CRGB::Black );
   }
 }
 
