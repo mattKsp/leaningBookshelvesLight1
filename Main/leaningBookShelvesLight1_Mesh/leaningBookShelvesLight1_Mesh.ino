@@ -1,6 +1,6 @@
 /*
     'leaningBookshelvesLight1_Mesh' by Thurstan. LED strip bookshelves light.
-    Copyright (C) 2018 MTS Standish (mattThurstan)
+    Copyright (C) 2019 MTS Standish (mattThurstan)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -30,9 +30,14 @@
 
 /*----------------------------system----------------------------*/
 const String _progName = "leaningBookshelvesLight1_Mesh";
-const String _progVers = "0.33";              // added blank led to start of array for level shifting hack and debug status
-#define DEBUG 1                               // 0 or 1
-boolean _debugOverlay = false;                // show debug overlay (eg. show segment endpoints)
+const String _progVers = "0.331";             // cleanup, mostly messages, input and debug
+
+boolean DEBUG_GEN = false;                    // realtime serial debugging output - general
+boolean DEBUG_OVERLAY = false;                // show debug overlay on leds (eg. show segment endpoints, center, etc.)
+boolean DEBUG_MESHSYNC = false;               // show painless mesh sync by flashing some leds (no = count of active mesh nodes) 
+boolean DEBUG_COMMS = false;                  // realtime serial debugging output - comms
+boolean DEBUG_USERINPUT = false;              // realtime serial debugging output - user input
+
 boolean _firstTimeSetupDone = false;          // starts false //this is mainly to catch an interrupt trigger that happens during setup, but is usefull for other things
 volatile boolean _onOff = false;              // this should init false, then get activated by input - on/off true/false
 bool shouldSaveSettings = false; // flag for saving data
@@ -59,13 +64,10 @@ const int _modePresetSlotNum = 6;
 int _modePreset[_modePresetSlotNum] = { 0, 2, 3, 4, 5, 7 }; //test basic, tap bt to cycle around 6 mode slots   //expand to array or struct later for more presets
 volatile int _modeCur = 0;                    // current mode in use - this is not the var you are looking for.. try _modePresetSlotCur
 int _modePresetSlotCur = 0;                   // the current array pos (slot) in the current preset, as opposed to..      //+/- by userInput
-
-//#define ARRAYSIZE 10
-//String results[ARRAYSIZE] = { "uno", "duo", "tri" };
-//char *pointer[] = { "uno", "due",  "due"};
 String modeName[_modeNum] = { "Glow", "Sunrise", "Morning", "Day", "Working", "Evening", "Sunset", "Night", "Effect" };
-//char *modeName[] = { "Glow", "Sunrise", "Morning", "Day", "Working", "Evening", "Sunset", "Night", "Effect" };
-
+//const int _subModeNum = 3;
+//int _subModeCur = 1;                          // color temperature sub-modes for the main "Working" mode.
+//String subModeName[_subModeNum] = { "Warm", "Standard", "CoolWhite" }; // color temperature sub-mode names for the main "Working" mode.
 
 /*-----------------RTC (DS3231 and AT24C32) on I2C------------------*/
 boolean _sunRiseEnabled = false;
@@ -126,10 +128,13 @@ CRGB endColor_RGB( 249, 180, 1 );
                                               
 CRGB leds[_ledNumOfStrips][_ledNumPerStrip];  // global RGB array matrix
 int _ledState = LOW;                          // use to toggle LOW/HIGH (ledState = !ledState)
+
 #define TEMPERATURE_0 WarmFluorescent
 #define TEMPERATURE_1 StandardFluorescent
 #define TEMPERATURE_2 CoolWhiteFluorescent
-int _colorTempCur = 5;                        // current colour temperature       ???
+const int _colorTempNum = 3;                  // 3 for now
+int _colorTempCur = 1;                        // current colour temperature
+String colorTempName[_colorTempNum] = { "Warm", "Standard", "CoolWhite" }; // color temperature sub-mode names for the main "Working" mode.
 
 /*----------------------------Mesh----------------------------*/
 painlessMesh  mesh;
@@ -140,7 +145,7 @@ String _modeString = "Glow";
 uint32_t id = DEVICE_ID_BRIDGE1;
 
 void receivedCallback(uint32_t from, String &msg ) {
-  if (DEBUG) { Serial.printf("leaningBookshelvesLight1_Mesh: Received from %u msg=%s\n", from, msg.c_str()); }
+  if (DEBUG_COMMS) { Serial.printf("leaningBookshelvesLight1_Mesh: Received from %u msg=%s\n", from, msg.c_str()); }
   receiveMessage(from, msg);
 }
 
@@ -152,19 +157,19 @@ void newConnectionCallback(uint32_t nodeId) {
     //publishMode(false);
     runonce = false;
   }
-  if (DEBUG) { Serial.printf("--> leaningBookshelvesLight1_Mesh: New Connection, nodeId = %u\n", nodeId); }
+  if (DEBUG_COMMS) { Serial.printf("--> leaningBookshelvesLight1_Mesh: New Connection, nodeId = %u\n", nodeId); }
 }
 
 void changedConnectionCallback() {
-  if (DEBUG) { Serial.printf("Changed connections %s\n",mesh.subConnectionJson().c_str()); }
+  if (DEBUG_COMMS) { Serial.printf("Changed connections %s\n",mesh.subConnectionJson().c_str()); }
 }
 
 void nodeTimeAdjustedCallback(int32_t offset) {
-  if (DEBUG) { Serial.printf("Adjusted time %u. Offset = %d\n", mesh.getNodeTime(),offset); }
+  if (DEBUG_COMMS) { Serial.printf("Adjusted time %u. Offset = %d\n", mesh.getNodeTime(),offset); }
 }
 
 void delayReceivedCallback(uint32_t from, int32_t delay) {
-  if (DEBUG) { Serial.printf("Delay to node %u is %d us\n", from, delay); }
+  if (DEBUG_COMMS) { Serial.printf("Delay to node %u is %d us\n", from, delay); }
 }
 
 
@@ -173,7 +178,7 @@ void setup() {
   
   Serial.begin(115200);
   
-  if (DEBUG) {
+  //if (DEBUG_GEN) {
     Serial.println();
     Serial.print(_progName);
     Serial.print(" v");
@@ -181,7 +186,7 @@ void setup() {
     Serial.println();
     Serial.print("..");
     Serial.println();
-  }
+  //}
   
   delay(3000);                                // give the power, LED strip, etc. a couple of secs to stabilise
   setupLEDs();
@@ -190,7 +195,7 @@ void setup() {
 
   //setSunRise(9, 30);      //TEMP
   
-  if (DEBUG) {
+  //if (DEBUG_GEN) {
   //everything done? ok then..
     Serial.print(F("Setup done"));
     Serial.println("-----");
@@ -199,15 +204,13 @@ void setup() {
     Serial.println(s);
     Serial.println("-----");
     Serial.println("");
-  }
+  //}
 }
 
 void loop() {
   
   if(_firstTimeSetupDone == false) {
-    if (DEBUG) {
-      
-    }
+    if (DEBUG_GEN) { }
     _firstTimeSetupDone = true;               // need this for stuff like setting sunrise, cos it needs the time to have been set
   }
 
@@ -218,7 +221,7 @@ void loop() {
   //clock extras
   //showTime();
 
-  if (_debugOverlay) {
+  if (DEBUG_OVERLAY) {
     checkSegmentEndpoints();
     //showColorTempPx();
   }

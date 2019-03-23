@@ -51,7 +51,7 @@ void setSunRise(uint8_t hour, uint8_t mins) {
     //RTC.setAlarm(MyTimestamp, DS3231_Simple::ALARM_MATCH_SECOND); 
     //RTC.setAlarm(MyTimestamp, DS3231_Simple::ALARM_MATCH_SECOND_MINUTE_HOUR);       //sun set - Alarm 1 - ALARM_MATCH_SECOND_MINUTE_HOUR
   
-  if (DEBUG) {
+  if (DEBUG_GEN) {
     Serial.println();
     Serial.print(F("void setSunRiseSet (rise/Alarm2) "));
     Serial.print(hour);
