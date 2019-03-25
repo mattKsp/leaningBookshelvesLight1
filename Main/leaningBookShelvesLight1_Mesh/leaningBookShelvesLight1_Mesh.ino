@@ -30,12 +30,12 @@
 
 /*----------------------------system----------------------------*/
 const String _progName = "leaningBookshelvesLight1_Mesh";
-const String _progVers = "0.331";             // cleanup, mostly messages, input and debug
+const String _progVers = "0.332";             // tweaking
 
-boolean DEBUG_GEN = false;                    // realtime serial debugging output - general
+boolean DEBUG_GEN = true;                     // realtime serial debugging output - general
 boolean DEBUG_OVERLAY = false;                // show debug overlay on leds (eg. show segment endpoints, center, etc.)
 boolean DEBUG_MESHSYNC = false;               // show painless mesh sync by flashing some leds (no = count of active mesh nodes) 
-boolean DEBUG_COMMS = false;                  // realtime serial debugging output - comms
+boolean DEBUG_COMMS = true;                   // realtime serial debugging output - comms
 boolean DEBUG_USERINPUT = false;              // realtime serial debugging output - user input
 
 boolean _firstTimeSetupDone = false;          // starts false //this is mainly to catch an interrupt trigger that happens during setup, but is usefull for other things
@@ -178,15 +178,13 @@ void setup() {
   
   Serial.begin(115200);
   
-  //if (DEBUG_GEN) {
-    Serial.println();
-    Serial.print(_progName);
-    Serial.print(" v");
-    Serial.print(_progVers);
-    Serial.println();
-    Serial.print("..");
-    Serial.println();
-  //}
+  Serial.println();
+  Serial.print(_progName);
+  Serial.print(" v");
+  Serial.print(_progVers);
+  Serial.println();
+  Serial.print("..");
+  Serial.println();
   
   delay(3000);                                // give the power, LED strip, etc. a couple of secs to stabilise
   setupLEDs();
@@ -195,16 +193,15 @@ void setup() {
 
   //setSunRise(9, 30);      //TEMP
   
-  //if (DEBUG_GEN) {
   //everything done? ok then..
-    Serial.print(F("Setup done"));
-    Serial.println("-----");
-    Serial.print(F("Device Node ID is "));
-    String s = String(mesh.getNodeId());
-    Serial.println(s);
-    Serial.println("-----");
-    Serial.println("");
-  //}
+  Serial.print(F("Setup done"));
+  Serial.println("-----");
+  Serial.print(F("Device Node ID is "));
+  String s = String(mesh.getNodeId());
+  Serial.println(s);
+  Serial.println("-----");
+  Serial.println("");
+
 }
 
 void loop() {
