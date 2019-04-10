@@ -85,7 +85,7 @@ void receiveMessage(uint32_t from, String msg)
     //  }
     //}
     
-    publishMode(true);
+    //publishMode(true);
     if (DEBUG_COMMS) { Serial.print(targetSub); Serial.println(msgSub); }
   }
   else if (targetSub == "lights/mode/coltemp")
@@ -96,7 +96,8 @@ void receiveMessage(uint32_t from, String msg)
     { setColorTemp(1); }
     else if (msgSub == "CoolWhite") 
     { setColorTemp(2); }
-    publishColorTemp(true);
+    
+    //publishColorTemp(true);
     if (DEBUG_COMMS) { Serial.print(targetSub); Serial.println(msgSub); }
   }
   else if (targetSub == "lights/mode/effect")

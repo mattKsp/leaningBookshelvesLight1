@@ -1,9 +1,74 @@
 /*----------------------------notes----------------------------*/
+/*
+ * Wemos D32 (and Pro), 80 MHz (..says 240 on the box?), 4M
+ * https://randomnerdtutorials.com/esp32-pinout-reference-gpios/
+ * 
+ * Pinout Wemos D32 (ESP32-WROOM)
+ * 
+ * 36 - VP (RTC_GPIO0 interrupt)
+ * 39 - VN
+ * 34 - ADC1_CH6
+ * 32 - ADC1_CH4 / TFT_LED
+ * 33 - ADC1_CH5 / TFT_RST
+ * 25 - DAC_1 (Analog Output)
+ * 26 - DAC_2 (Analog Output)
+ * 27 - TFT_DC
+ * 14 - TFT_CS
+ * 12 - TS_CS
+ * 13
+ * 
+ * 23 - MOSI
+ * 22 - SCL
+ * 1 - TX
+ * 3 - RX
+ * 21 - SDA
+ * 19 - MISO
+ * 18 - SCK
+ * 5 - SS
+ * 17 - NC
+ * 16 - NC
+ * 4
+ * 0
+ * 2
+ * 15
+ * 
+ * Pinout Wemos D32 Pro (ESP32-WROVER)
+ * 
+ * 36 - VP (RTC_GPIO0 interrupt)
+ * 39 - VN
+ * 34 - ADC1_CH6
+ * 32 - ADC1_CH4 / TFT_LED
+ * 33 - ADC1_CH5 / TFT_RST
+ * 25 - DAC_1 (Analog Output)
+ * 26 - DAC_2 (Analog Output)
+ * 27 - TFT_DC
+ * 14 - TFT_CS
+ * 12 - TS_CS
+ * 13
+ * 
+ * 23 - MOSI
+ * 22 - SCL
+ * 1 - TX
+ * 3 - RX
+ * 21 - SDA
+ * 19 - MISO
+ * 18 - SCK
+ * 5 - SS
+ * NC
+ * NC
+ * 4
+ * 0
+ * 2
+ * 15
+ * 
+ */
+
 
 /* 
  * WeMos D1 (R2 &) mini, 80 MHz, 115200 baud, 4M, (3M SPIFFS)
  * 
  * Pinout Wemos D1 Mini (ESP-8266)
+ * 
  * RX  3
  * TX  1
  * A0  Analog input, max 3.2V input  A0
