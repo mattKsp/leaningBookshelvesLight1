@@ -30,13 +30,13 @@
 
 /*----------------------------system----------------------------*/
 const String _progName = "leaningBookshelvesLight1_Mesh";
-const String _progVers = "0.4";               // moved to Wemos Lolin D32 Pro (ESP32-WROVER)
+const String _progVers = "0.401";             // mqtt status request
 
-boolean DEBUG_GEN = true;                     // realtime serial debugging output - general
+boolean DEBUG_GEN = false;                    // realtime serial debugging output - general
 boolean DEBUG_OVERLAY = false;                // show debug overlay on leds (eg. show segment endpoints, center, etc.)
 boolean DEBUG_MESHSYNC = false;               // show painless mesh sync by flashing some leds (no = count of active mesh nodes) 
-boolean DEBUG_COMMS = true;                   // realtime serial debugging output - comms
-boolean DEBUG_USERINPUT = true;               // realtime serial debugging output - user input
+boolean DEBUG_COMMS = false;                  // realtime serial debugging output - comms
+boolean DEBUG_USERINPUT = false;              // realtime serial debugging output - user input
 
 boolean _firstTimeSetupDone = false;          // starts false //this is mainly to catch an interrupt trigger that happens during setup, but is usefull for other things
 volatile boolean _onOff = false;              // this should init false, then get activated by input - on/off true/false
@@ -183,11 +183,7 @@ void receivedCallback(uint32_t from, String &msg ) {
 
 void newConnectionCallback(uint32_t nodeId) {
   if (runonce == true) {
-    publishState(false);
-    publishBrightness(false);
-    //publishRGB(false);
-    publishMode(false);
-    publishColorTemp(false);
+    publishStatusAll(false);
     runonce = false;
   }
   if (DEBUG_COMMS) { Serial.printf("--> leaningBookshelvesLight1_Mesh: New Connection, nodeId = %u\n", nodeId); }
@@ -269,5 +265,3 @@ void loop() {
   //
   //delay(_mainLoopDelay);  //using FastLED.delay instead..
 }
-
-
