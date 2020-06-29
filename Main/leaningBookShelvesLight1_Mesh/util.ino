@@ -1,6 +1,18 @@
 /*----------------------------util----------------------------*/
 
 /*
+  DS3231 - 'kick the interrupt'
+  Just to make sure interrupt output pin SQW gets turned on
+  Enables interrupt pin, alarm 2 and alarm
+ */
+void DS3231kickInterrupt() {
+  Wire.beginTransmission(DS3231_I2C_ADDRESS);
+  Wire.write(0x0E);                         // control location
+  Wire.write(B00000111);                    // ..this!
+  Wire.endTransmission();
+}
+
+/*
  * Mode utils
  */
 void incrementPresetSlot() {
@@ -84,5 +96,13 @@ void showColorTempPx() {
   //leds[0] = TEMPERATURE_1;                  //show indicator pixel
 }
 
-
-
+/*
+ * Print digits.
+ * Helper for Debug output.
+ */
+void printDigits(int digits) 
+{
+  Serial.print(":");
+  if (digits < 10) { Serial.print('0'); }
+  Serial.print(digits);
+}

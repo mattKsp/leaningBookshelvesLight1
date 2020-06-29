@@ -2,7 +2,6 @@
 /*
  * sunrise and sunset modes (1 & 6) are usually kept out of the preset lists and just triggered by the alarm interrupts
  * ..but it is a mode and can be selected as such 
- * eg. for testing/demo porpoises
  */
  
 void mode1() {
@@ -19,15 +18,24 @@ void mode1() {
 //  }
 //  fill_gradient_RGB(leds, ledSegment[3].first, CRGB::Black, ledSegment[3].last, CRGB(32, 32, 32) );
 //  //END TEMP
-  
-} //END mode1
 
+  if (_sunRiseTriggered) {
+    _modeCur = _saveCurMode;                  // Restore previous mode
+    _sunRiseTriggered = false;
+  }
+
+} //END mode1
 
 void mode6() {
   //name is sunset!
   //fadeToBlackBy( leds, _ledNum, 100);   //TEMP
-  //doSunSet();
-  
+  doSunSet();
+
+  if (_sunSetTriggered) {
+    _modeCur = _saveCurMode;                  // Restore previous mode
+    _sunSetTriggered = false;
+  }
+
 } //END mode6
 
 
@@ -59,6 +67,11 @@ void setSunRise(uint8_t hour, uint8_t mins) {
     Serial.print(mins);
     Serial.println();
   }
+}
+
+
+void setSunSet(uint8_t hour, uint8_t mins) {
+  //
 }
 
 /*----------------------------do----------------------------*/
@@ -168,5 +181,3 @@ void doSunRise() {
 void doSunSet() {
   //
 }
-
-

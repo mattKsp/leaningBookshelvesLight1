@@ -1,7 +1,7 @@
 /*----------------------------user input----------------------------*/
 boolean _touchActive = false;
 void setupUserInputs() {
-  s32 ret = 0;                                  // s32 = int
+  s32 ret = 0;                                // s32 = int
   if(mpr121.begin() < 0)
   {
     _touchActive = false;
@@ -27,9 +27,9 @@ void loopUserInputs() {
 
 /*---------------touch sensors MPR121--------------*/
 void touchSensorsMPR121() {
-  u16 result = 0;                               // u16 = unsigned short
+  u16 result = 0;                             // u16 = unsigned short
   u16 filtered_data_buf[CHANNEL_NUM] = { 0 };
-  u8 baseline_buf[CHANNEL_NUM] = { 0 };         // u8 = unsigned char
+  u8 baseline_buf[CHANNEL_NUM] = { 0 };       // u8 = unsigned char
   
   result = mpr121.check_status_register();
 
@@ -84,36 +84,34 @@ void touchSensorsMPR121() {
       } // end  if touch status flag 1
     } // end else result
   } // end for-loop
-  //delay(50);                                  // ???
+  //delay(50);                                // ???
 }
 
 /*---------------touch sensors MPR121 - pressed--------------*/
-void touch0pressed() {                          // touch sensor 0 - on/off
-  _onOff = !_onOff;                             // flip the lights
+void touch0pressed() {                        // touch sensor 0 - on/off
+  _onOff = !_onOff;                           // flip the lights
   publishState(true);
 }
-void touch1pressed() {                          // touch sensor 1 - mode up
+void touch1pressed() {                        // touch sensor 1 - mode up
   incrementPresetSlot();
   publishMode(true);
 }
-void touch2pressed() {                          // touch sensor 2 - mode down
+void touch2pressed() {                        // touch sensor 2 - mode down
   decrementPresetSlot();
   publishMode(true);
 }
-void touch3pressed() {                          // touch sensor 3 - sub-mode cycle
+void touch3pressed() {                        // touch sensor 3 - sub-mode cycle
   // sub-modes eg. cycle temperature modes (not implemented yet)
   cycleColorTemp(); 
   publishColorTemp(true);
 }
-void touch4pressed() {                          // touch sensor 4 - brightness up
+void touch4pressed() {                        // touch sensor 4 - brightness up
   //increaseBrightness();
   publishBrightness(true);
 }
-void touch5pressed() {                          // touch sensor 5 - brightness down
+void touch5pressed() {                        // touch sensor 5 - brightness down
   //decreaseBrightness();
   publishBrightness(true);
 }
 
 /*---------------touch sensors MPR121 - released--------------*/
-
-

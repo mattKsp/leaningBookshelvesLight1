@@ -1,7 +1,7 @@
 /*
     'leaningBookshelvesLight1_Mesh' by Thurstan. LED strip bookshelves light.
-    Copyright (C) 2019 MTS Standish (mattThurstan)
-
+    Copyright (C) 2020 MTS Standish (Thurstan|mattKsp)
+    
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
@@ -20,23 +20,29 @@
 
 
 /*----------------------------libraries----------------------------*/
+#include <MT_LightControlDefines.h>
 #include <EEPROM.h>                           // a few saved settings
 #include <FastLED.h>                          // WS2812B LED strip control and effects
 #include <Wire.h>                             // include, but do not need to initialise - for DS3231 & CAP1296
 #include "Seeed_MPR121_driver.h"              // Grove - 12 Key Capacitive I2C Touch Sensor V2 (MPR121) - using edited version
 #include "painlessMesh.h"
-#include <MT_LightControlDefines.h>
+// Will most likely plug the DS3231 into another module to set the time.
+#include <DS1307RTC.h>                        // https://github.com/PaulStoffregen/DS1307RTC - for DS3231 realtime clock (with AT24C32 memory backback)
+#include <Time.h>
+#include <TimeLib.h>                          // https://github.com/PaulStoffregen/Time
+#include <Timezone.h>                         // https://github.com/JChristensen/Timezone
 
 
 /*----------------------------system----------------------------*/
 const String _progName = "leaningBookshelvesLight1_Mesh";
-const String _progVers = "0.401";             // mqtt status request
+const String _progVers = "0.50";              // Added DS3231 realtime clock
 
 boolean DEBUG_GEN = false;                    // realtime serial debugging output - general
 boolean DEBUG_OVERLAY = false;                // show debug overlay on leds (eg. show segment endpoints, center, etc.)
 boolean DEBUG_MESHSYNC = false;               // show painless mesh sync by flashing some leds (no = count of active mesh nodes) 
 boolean DEBUG_COMMS = false;                  // realtime serial debugging output - comms
 boolean DEBUG_USERINPUT = false;              // realtime serial debugging output - user input
+boolean DEBUG_TIME = false;                   // time
 
 boolean _firstTimeSetupDone = false;          // starts false //this is mainly to catch an interrupt trigger that happens during setup, but is usefull for other things
 volatile boolean _onOff = false;              // this should init false, then get activated by input - on/off true/false
@@ -45,8 +51,6 @@ bool runonce = true; // flag for sending states when first mesh conection
 //const int _mainLoopDelay = 0;               // just in case  - using FastLED.delay instead..
 
 /*----------------------------pins----------------------------*/
-//const int _i2cInterrupt1Pin = 36;             // I2C interrupt pin 1 - DS3231 interrupt pin
-//const int _i2cInterrupt2Pin = 39;             // I2C interrupt pin 2
 const int _ledDOut0Pin = 4;                   // DOut 0 -> LED strip 0 DIn   - right (short)
 const int _ledDOut1Pin = 0;                   // DOut 1 -> LED strip 1 DIn   - middle (long)
 const int _ledDOut2Pin = 2;                   // DOut 2 -> LED strip 2 DIn   - left (long)
@@ -55,6 +59,10 @@ const int _ledDOut2Pin = 2;                   // DOut 2 -> LED strip 2 DIn   - l
 //const int _ledDOut4Pin = 14;                  // DOut 4 -> LED strip 4 DIn   - SPARE
 //const int _ledDOut4Pin = 12;                  // DOut 4 -> LED strip 4 DIn   - SPARE
 //const int _ledDOut4Pin = 13;                  // DOut 4 -> LED strip 4 DIn   - SPARE
+
+const int _i2cInterrupt1Pin = 36;             // I2C interrupt pin 1 - DS3231 - Sunrise/Sunset
+const int _i2cSDApin = 21;                    // SDA (21) - interrupt pin
+const int _i2cSCLpin = 22;                    // SCL (22) - interrupt pin
 
 // Pinout Wemos D32 Pro (ESP32-WROVER)
 // ..remember to disconnect all pins before re-flashing
@@ -97,10 +105,14 @@ String modeName[_modeNum] = { "Glow", "Sunrise", "Morning", "Day", "Working", "E
 //const int _subModeNum = 3;
 //int _subModeCur = 1;                          // color temperature sub-modes for the main "Working" mode.
 //String subModeName[_subModeNum] = { "Warm", "Standard", "CoolWhite" }; // color temperature sub-mode names for the main "Working" mode.
+int _saveCurMode = 0;
 
 /*-----------------RTC (DS3231 and AT24C32) on I2C------------------*/
+#define DS3231_I2C_ADDRESS 0x68               // default - only used for interrupt kick
 boolean _sunRiseEnabled = false;
 boolean _sunSetEnabled = false;
+volatile boolean _sunRiseTriggered = false;
+volatile boolean _sunSetTriggered = false;
 int _sunRiseStateCur = 0;                     // current sunrise internal state (beginning, rise, end)
 int _sunSetStateCur = 0;                      // current sunset internal state (beginning, fall, end)
 
@@ -201,6 +213,48 @@ void delayReceivedCallback(uint32_t from, int32_t delay) {
   if (DEBUG_COMMS) { Serial.printf("Delay to node %u is %d us\n", from, delay); }
 }
 
+/*----------------------------daylight savings------------------*/
+// UK Time Zone (London)
+// British Summer Time (BST)
+// https://en.wikipedia.org/wiki/British_Summer_Time
+TimeChangeRule myDST = {"DST", Last, Sun, Mar, 1, 60}; // Daylight savings time = UTC minus 1 hour
+TimeChangeRule myUTC = {"UTC", Last, Sun, Oct, 1, 0}; // Standard time = UTC
+Timezone myTimeZone(myDST, myUTC);
+TimeChangeRule *timeChangeRule;               // Pointer to the time change rule, use to get TZ abbrev
+
+/* 
+ * Get the time and check and/or convert to daylight savings.
+ * Returns a tmElements_t timestamp.
+ * Placed here so that it stays in scope for tmElements_t timeStamp.
+ */
+tmElements_t GetTime() 
+{
+  time_t utc = now();                           // Create a variable to hold the data
+  time_t local = myTimeZone.toLocal(utc, &timeChangeRule); // Get the time and check/convert daylight savings
+  tmElements_t timeStamp;                       // Create a variable to hold the data 
+  // timeStamp.Year
+  // timeStamp.Month
+  // timeStamp.Day
+  // timeStamp.Hour
+  // timeStamp.Minute
+  // timeStamp.Second
+
+  //local = makeTime(timeStamp);                // Convert the tmElements_t to a time_t variable with function makeTime
+  breakTime(local, timeStamp);                // Convert back to a tmElements_t with function breakTime
+
+  if (DEBUG_TIME) { 
+    Serial.print("The time is now: ");
+    Serial.print(hour());
+    printDigits(minute());
+    printDigits(second());
+    Serial.println();
+  }
+  
+  return timeStamp;
+}
+
+tmElements_t timeStamp = GetTime();           // Timestamp to get the time
+
 
 /*----------------------------MAIN----------------------------*/
 void setup() {
@@ -214,13 +268,17 @@ void setup() {
   Serial.println();
   Serial.print("..");
   Serial.println();
+
+  setupTime();
+  setupInterrupts();
   
-  delay(3000);                                // give the power, LED strip, etc. a couple of secs to stabilise
+  delay(3000);                                // Give the power, LED strip, etc. a couple of secs to stabilise
   setupLEDs();
   setupUserInputs();                          //
   setupMesh();
 
-  //setSunRise(9, 30);      //TEMP
+  DS3231kickInterrupt();  //TEMP util
+  
   
   //everything done? ok then..
   Serial.print(F("Setup done"));
@@ -231,6 +289,7 @@ void setup() {
   Serial.println("-----");
   Serial.println("");
 
+  delay(1);
 }
 
 void loop() {
