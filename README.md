@@ -1,5 +1,6 @@
 # leaningBookshelvesLight1
-LED leaning bookshelves light, by Thurstan
+LED leaning bookshelves light, by Thurstan <br> 
+https://hackaday.io/project/26918-leaningbookshelveslight1
 
 Repository is an Arduino project
 
