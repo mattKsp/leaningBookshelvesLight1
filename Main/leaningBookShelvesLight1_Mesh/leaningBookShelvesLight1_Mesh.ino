@@ -18,6 +18,7 @@
     https://github.com/mattThurstan/
 */
 
+// Wemos D32 Pro (ESP32-WROVER)
 
 /*----------------------------libraries----------------------------*/
 #include <MT_LightControlDefines.h>
@@ -25,17 +26,16 @@
 #include <FastLED.h>                          // WS2812B LED strip control and effects
 #include <Wire.h>                             // include, but do not need to initialise - for DS3231 & CAP1296
 #include "Seeed_MPR121_driver.h"              // Grove - 12 Key Capacitive I2C Touch Sensor V2 (MPR121) - using edited version
-#include "painlessMesh.h"
-// Will most likely plug the DS3231 into another module to set the time.
+#include "painlessMesh.h"                     // https://github.com/gmag11/painlessMesh
+// Will most likely remove the DS3231 and plug it into another module in order to set the time manualy.
 #include <DS1307RTC.h>                        // https://github.com/PaulStoffregen/DS1307RTC - for DS3231 realtime clock (with AT24C32 memory backback)
 #include <Time.h>
 #include <TimeLib.h>                          // https://github.com/PaulStoffregen/Time
 #include <Timezone.h>                         // https://github.com/JChristensen/Timezone
 
-
 /*----------------------------system----------------------------*/
 const String _progName = "leaningBookshelvesLight1_Mesh";
-const String _progVers = "0.50";              // Added DS3231 realtime clock
+const String _progVers = "0.501";             // New shelves
 
 boolean DEBUG_GEN = false;                    // realtime serial debugging output - general
 boolean DEBUG_OVERLAY = false;                // show debug overlay on leds (eg. show segment endpoints, center, etc.)
@@ -46,31 +46,24 @@ boolean DEBUG_TIME = false;                   // time
 
 boolean _firstTimeSetupDone = false;          // starts false //this is mainly to catch an interrupt trigger that happens during setup, but is usefull for other things
 volatile boolean _onOff = false;              // this should init false, then get activated by input - on/off true/false
-bool shouldSaveSettings = false; // flag for saving data
-bool runonce = true; // flag for sending states when first mesh conection
+bool shouldSaveSettings = false;              // flag for saving data
+bool runonce = true;                          // flag for sending states when first mesh conection
 //const int _mainLoopDelay = 0;               // just in case  - using FastLED.delay instead..
 
+bool _isBreathing = false;                    // toggle for breath
+bool _isBreathOverlaid = false;               // toggle for whether breath is overlaid on top of modes
+bool _isBreathingSynced = false;              // breath sync local or global
+
 /*----------------------------pins----------------------------*/
-const int _ledDOut0Pin = 4;                   // DOut 0 -> LED strip 0 DIn   - right (short)
-const int _ledDOut1Pin = 0;                   // DOut 1 -> LED strip 1 DIn   - middle (long)
-const int _ledDOut2Pin = 2;                   // DOut 2 -> LED strip 2 DIn   - left (long)
-//const int _ledDOut3Pin = 15;                  // DOut 3 -> LED strip 3 DIn   - SPARE ..for future use
-//const int _ledDOut4Pin = 27;                  // DOut 4 -> LED strip 4 DIn   - SPARE
-//const int _ledDOut4Pin = 14;                  // DOut 4 -> LED strip 4 DIn   - SPARE
-//const int _ledDOut4Pin = 12;                  // DOut 4 -> LED strip 4 DIn   - SPARE
-//const int _ledDOut4Pin = 13;                  // DOut 4 -> LED strip 4 DIn   - SPARE
 
-const int _i2cInterrupt1Pin = 36;             // I2C interrupt pin 1 - DS3231 - Sunrise/Sunset
-const int _i2cSDApin = 21;                    // SDA (21) - interrupt pin
-const int _i2cSCLpin = 22;                    // SCL (22) - interrupt pin
+/*
+ / Pinout Wemos D32 Pro (ESP32-WROVER)
+ / ..remember to disconnect all pins before re-flashing
 
-// Pinout Wemos D32 Pro (ESP32-WROVER)
-// ..remember to disconnect all pins before re-flashing
-
-//36 - VP (Analog Input) (RTC_GPIO0 interrupt 0)
-//39 - VN (Analog Input) (RTC_GPIO0 interrupt 3)
-//34 - ADC1_CH6 (Analog Input)
-//32 - ADC1_CH4 / TFT_LED (Analog Input)
+ / 36 - VP (Analog Input) (RTC_GPIO0 interrupt 0)
+ / 39 - VN (Analog Input) (RTC_GPIO0 interrupt 3)
+ / 34 - ADC1_CH6 (Analog Input)
+ / 32 - ADC1_CH4 / TFT_LED (Analog Input)
 //33 - ADC1_CH5 / TFT_RST (Analog Input)
 //25 - DAC_1 (Analog Output)
 //26 - DAC_2 (Analog Output)
@@ -94,6 +87,21 @@ const int _i2cSCLpin = 22;                    // SCL (22) - interrupt pin
 //2
 //15
 
+// 5v regulated power is connected to USB (VBUS)
+*/
+
+const int _ledDOut0Pin = 4;                   // DOut 0 -> LED strip 0 DIn   - right 2 (short)
+const int _ledDOut1Pin = 0;                   // DOut 1 -> LED strip 1 DIn   - right (long)
+const int _ledDOut2Pin = 2;                   // DOut 2 -> LED strip 2 DIn   - middle
+const int _ledDOut3Pin = 15;                  // DOut 3 -> LED strip 3 DIn   - left
+//const int _ledDOut4Pin = 27;                  // DOut 4 -> LED strip 4 DIn   - SPARE
+//const int _ledDOut4Pin = 14;                  // DOut 4 -> LED strip 4 DIn   - SPARE
+//const int _ledDOut4Pin = 12;                  // DOut 4 -> LED strip 4 DIn   - SPARE
+//const int _ledDOut4Pin = 13;                  // DOut 4 -> LED strip 4 DIn   - SPARE
+
+const int _i2cInterrupt1Pin = 36;             // I2C interrupt pin 1 - DS3231 - Sunrise/Sunset
+const int _i2cSDApin = 21;                    // SDA (21) - interrupt pin
+const int _i2cSCLpin = 22;                    // SCL (22) - interrupt pin
  
 /*----------------------------modes----------------------------*/
 const int _modeNum = 9;
@@ -102,10 +110,11 @@ int _modePreset[_modePresetSlotNum] = { 0, 2, 3, 4, 5, 7 }; //test basic, tap bt
 volatile int _modeCur = 0;                    // current mode in use - this is not the var you are looking for.. try _modePresetSlotCur
 int _modePresetSlotCur = 0;                   // the current array pos (slot) in the current preset, as opposed to..      //+/- by userInput
 String modeName[_modeNum] = { "Glow", "Sunrise", "Morning", "Day", "Working", "Evening", "Sunset", "Night", "Effect" };
-//const int _subModeNum = 3;
-//int _subModeCur = 1;                          // color temperature sub-modes for the main "Working" mode.
-//String subModeName[_subModeNum] = { "Warm", "Standard", "CoolWhite" }; // color temperature sub-mode names for the main "Working" mode.
 int _saveCurMode = 0;
+
+const int _colorTempNum = 3;                  // 3 for now
+int _colorTempCur = 1;                        // current colour temperature
+String colorTempName[_colorTempNum] = { "Warm", "Standard", "CoolWhite" }; // color temperature sub-mode names for the main "Working" mode.
 
 /*-----------------RTC (DS3231 and AT24C32) on I2C------------------*/
 #define DS3231_I2C_ADDRESS 0x68               // default - only used for interrupt kick
@@ -132,9 +141,9 @@ typedef struct {
   byte last;
   byte total;
 } LED_SEGMENT;
-const int _ledNumOfStrips = 3;                // 3x LED strips (12, 34, 34)  (not using all 5 yet)
-const int _ledNumPerStrip = 36;               // Xm strip with LEDs (1 + 35)
-const int _segmentTotal = 11;                 // total segments (shelves) on each strip (1 + 10)
+const int _ledNumOfStrips = 4;                // 3x LED strips (29, 29, 29, 15)
+const int _ledNumPerStrip = 30;               // Xm strip with LEDs (1 + 29)
+const int _segmentTotal = 9;                 // total segments (shelves) on each strip (1 + 8)
 const int _ledGlobalBrightness = 255;         // global brightness - use this to cap the brightness
 int _ledGlobalBrightnessCur = 255;            // current global brightness - adjust this one!
 int _ledBrightnessIncDecAmount = 10;          // the brightness amount to increase or decrease
@@ -161,9 +170,7 @@ LED_SEGMENT ledSegment[_segmentTotal] = {
   { 16, 19, 4 },
   { 20, 23, 4 },
   { 24, 26, 3 },
-  { 27, 29, 3 },
-  { 30, 32, 3 },
-  { 33, 35, 3 }
+  { 27, 29, 3 }
 };
 CHSV startColor( 144, 70, 64 );
 CHSV endColor( 31, 71, 69 );
@@ -176,9 +183,6 @@ int _ledState = LOW;                          // use to toggle LOW/HIGH (ledStat
 #define TEMPERATURE_0 WarmFluorescent
 #define TEMPERATURE_1 StandardFluorescent
 #define TEMPERATURE_2 CoolWhiteFluorescent
-const int _colorTempNum = 3;                  // 3 for now
-int _colorTempCur = 1;                        // current colour temperature
-String colorTempName[_colorTempNum] = { "Warm", "Standard", "CoolWhite" }; // color temperature sub-mode names for the main "Working" mode.
 
 /*----------------------------Mesh----------------------------*/
 painlessMesh  mesh;
