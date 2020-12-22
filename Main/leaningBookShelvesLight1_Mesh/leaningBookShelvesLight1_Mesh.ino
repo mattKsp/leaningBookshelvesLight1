@@ -22,20 +22,15 @@
 
 /*----------------------------libraries----------------------------*/
 #include <MT_LightControlDefines.h>
-#include <EEPROM.h>                           // a few saved settings
+//#include <FS.h>                               // a few saved settings
 #include <FastLED.h>                          // WS2812B LED strip control and effects
 #include <Wire.h>                             // include, but do not need to initialise - for DS3231 & CAP1296
 #include "Seeed_MPR121_driver.h"              // Grove - 12 Key Capacitive I2C Touch Sensor V2 (MPR121) - using edited version
 #include "painlessMesh.h"                     // https://github.com/gmag11/painlessMesh
-// Will most likely remove the DS3231 and plug it into another module in order to set the time manualy.
-#include <DS1307RTC.h>                        // https://github.com/PaulStoffregen/DS1307RTC - for DS3231 realtime clock (with AT24C32 memory backback)
-#include <Time.h>
-#include <TimeLib.h>                          // https://github.com/PaulStoffregen/Time
-#include <Timezone.h>                         // https://github.com/JChristensen/Timezone
 
 /*----------------------------system----------------------------*/
 const String _progName = "leaningBookshelvesLight1_Mesh";
-const String _progVers = "0.501";             // New shelves
+const String _progVers = "0.510";             // removed time
 
 boolean DEBUG_GEN = false;                    // realtime serial debugging output - general
 boolean DEBUG_OVERLAY = false;                // show debug overlay on leds (eg. show segment endpoints, center, etc.)
@@ -98,10 +93,6 @@ const int _ledDOut3Pin = 15;                  // DOut 3 -> LED strip 3 DIn   - l
 //const int _ledDOut4Pin = 14;                  // DOut 4 -> LED strip 4 DIn   - SPARE
 //const int _ledDOut4Pin = 12;                  // DOut 4 -> LED strip 4 DIn   - SPARE
 //const int _ledDOut4Pin = 13;                  // DOut 4 -> LED strip 4 DIn   - SPARE
-
-const int _i2cInterrupt1Pin = 36;             // I2C interrupt pin 1 - DS3231 - Sunrise/Sunset
-const int _i2cSDApin = 21;                    // SDA (21) - interrupt pin
-const int _i2cSCLpin = 22;                    // SCL (22) - interrupt pin
  
 /*----------------------------modes----------------------------*/
 const int _modeNum = 9;
@@ -116,8 +107,7 @@ const int _colorTempNum = 3;                  // 3 for now
 int _colorTempCur = 1;                        // current colour temperature
 String colorTempName[_colorTempNum] = { "Warm", "Standard", "CoolWhite" }; // color temperature sub-mode names for the main "Working" mode.
 
-/*-----------------RTC (DS3231 and AT24C32) on I2C------------------*/
-#define DS3231_I2C_ADDRESS 0x68               // default - only used for interrupt kick
+/*-----------------sunrise/set------------------*/
 boolean _sunRiseEnabled = false;
 boolean _sunSetEnabled = false;
 volatile boolean _sunRiseTriggered = false;
@@ -149,18 +139,7 @@ int _ledGlobalBrightnessCur = 255;            // current global brightness - adj
 int _ledBrightnessIncDecAmount = 10;          // the brightness amount to increase or decrease
 #define UPDATES_PER_SECOND 120                // main loop FastLED show delay //100
 //need to add 1 led to the beginning to use as a blank to jump from 3.3 to 5v (cheap hack for level shifting)
-//LED_SEGMENT ledSegment[_segmentTotal] = { 
-//  { 0, 0, 1 }, 
-//  { 1, 5, 5 }, 
-//  { 6, 10, 5 },
-//  { 11, 14, 4 },
-//  { 15, 18, 4 },
-//  { 19, 22, 4 },
-//  { 23, 25, 3 },
-//  { 25, 27, 3 },
-//  { 28, 30, 3 },
-//  { 31, 34, 4 }
-//};
+
 LED_SEGMENT ledSegment[_segmentTotal] = { 
   { 0, 0, 1 }, //blank for level shifting hack and debug status
   { 1, 1, 1 }, 
@@ -217,48 +196,6 @@ void delayReceivedCallback(uint32_t from, int32_t delay) {
   if (DEBUG_COMMS) { Serial.printf("Delay to node %u is %d us\n", from, delay); }
 }
 
-/*----------------------------daylight savings------------------*/
-// UK Time Zone (London)
-// British Summer Time (BST)
-// https://en.wikipedia.org/wiki/British_Summer_Time
-TimeChangeRule myDST = {"DST", Last, Sun, Mar, 1, 60}; // Daylight savings time = UTC minus 1 hour
-TimeChangeRule myUTC = {"UTC", Last, Sun, Oct, 1, 0}; // Standard time = UTC
-Timezone myTimeZone(myDST, myUTC);
-TimeChangeRule *timeChangeRule;               // Pointer to the time change rule, use to get TZ abbrev
-
-/* 
- * Get the time and check and/or convert to daylight savings.
- * Returns a tmElements_t timestamp.
- * Placed here so that it stays in scope for tmElements_t timeStamp.
- */
-tmElements_t GetTime() 
-{
-  time_t utc = now();                           // Create a variable to hold the data
-  time_t local = myTimeZone.toLocal(utc, &timeChangeRule); // Get the time and check/convert daylight savings
-  tmElements_t timeStamp;                       // Create a variable to hold the data 
-  // timeStamp.Year
-  // timeStamp.Month
-  // timeStamp.Day
-  // timeStamp.Hour
-  // timeStamp.Minute
-  // timeStamp.Second
-
-  //local = makeTime(timeStamp);                // Convert the tmElements_t to a time_t variable with function makeTime
-  breakTime(local, timeStamp);                // Convert back to a tmElements_t with function breakTime
-
-  if (DEBUG_TIME) { 
-    Serial.print("The time is now: ");
-    Serial.print(hour());
-    printDigits(minute());
-    printDigits(second());
-    Serial.println();
-  }
-  
-  return timeStamp;
-}
-
-tmElements_t timeStamp = GetTime();           // Timestamp to get the time
-
 
 /*----------------------------MAIN----------------------------*/
 void setup() {
@@ -273,17 +210,11 @@ void setup() {
   Serial.print("..");
   Serial.println();
 
-  setupTime();
-  setupInterrupts();
-  
   delay(3000);                                // Give the power, LED strip, etc. a couple of secs to stabilise
   setupLEDs();
   setupUserInputs();                          //
   setupMesh();
 
-  DS3231kickInterrupt();  //TEMP util
-  
-  
   //everything done? ok then..
   Serial.print(F("Setup done"));
   Serial.println("-----");
@@ -307,9 +238,6 @@ void loop() {
   loopUserInputs();
   loopModes();
   
-  //clock extras
-  //showTime();
-
   if (DEBUG_OVERLAY) {
     checkSegmentEndpoints();
     //showColorTempPx();
