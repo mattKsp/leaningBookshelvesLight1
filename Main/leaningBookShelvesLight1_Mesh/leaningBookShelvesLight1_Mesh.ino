@@ -24,13 +24,12 @@
 #include <MT_LightControlDefines.h>
 //#include <FS.h>                               // a few saved settings
 #include <FastLED.h>                          // WS2812B LED strip control and effects
-#include <Wire.h>                             // include, but do not need to initialise - for DS3231 & CAP1296
 #include "Seeed_MPR121_driver.h"              // Grove - 12 Key Capacitive I2C Touch Sensor V2 (MPR121) - using edited version
 #include "painlessMesh.h"                     // https://github.com/gmag11/painlessMesh
 
 /*----------------------------system----------------------------*/
 const String _progName = "leaningBookshelvesLight1_Mesh";
-const String _progVers = "0.510";             // removed time
+const String _progVers = "0.520";             // new LED setup
 
 boolean DEBUG_GEN = false;                    // realtime serial debugging output - general
 boolean DEBUG_OVERLAY = false;                // show debug overlay on leds (eg. show segment endpoints, center, etc.)
@@ -39,7 +38,7 @@ boolean DEBUG_COMMS = false;                  // realtime serial debugging outpu
 boolean DEBUG_USERINPUT = false;              // realtime serial debugging output - user input
 boolean DEBUG_TIME = false;                   // time
 
-boolean _firstTimeSetupDone = false;          // starts false //this is mainly to catch an interrupt trigger that happens during setup, but is usefull for other things
+boolean _firstTimeSetupDone = false;          // starts false //this is mainly to catch an interrupt trigger (which isn't used anymore..) that happens during setup, but is usefull for other things
 volatile boolean _onOff = false;              // this should init false, then get activated by input - on/off true/false
 bool shouldSaveSettings = false;              // flag for saving data
 bool runonce = true;                          // flag for sending states when first mesh conection
@@ -125,14 +124,14 @@ u16 touch_status_flag[CHANNEL_NUM] = { 0 };   // u16 = unsigned short
 /*----------------------------LED----------------------------*/
 // might limit power draw even further if add usb charge ports to the system
 // or use usb chips and change power draw if usb device attached and charging
-#define MAX_POWER_DRAW 5700                   // limit power draw to 5.7A at 5v (with 6A power supply this gives us a bit of head room for board, lights etc.)
+#define MAX_POWER_DRAW 5700                   // limit power draw to ...Amp at 5v
 typedef struct {
   byte first;
   byte last;
   byte total;
 } LED_SEGMENT;
-const int _ledNumOfStrips = 4;                // 3x LED strips (29, 29, 29, 15)
-const int _ledNumPerStrip = 30;               // Xm strip with LEDs (1 + 29)
+const int _ledNumOfStrips = 4;                // 3x LED strips (39, 39, 39, 24)
+const int _ledNumPerStrip = 40;               // Xm strip with LEDs (1 + 39)
 const int _segmentTotal = 9;                 // total segments (shelves) on each strip (1 + 8)
 const int _ledGlobalBrightness = 255;         // global brightness - use this to cap the brightness
 int _ledGlobalBrightnessCur = 255;            // current global brightness - adjust this one!
@@ -142,14 +141,14 @@ int _ledBrightnessIncDecAmount = 10;          // the brightness amount to increa
 
 LED_SEGMENT ledSegment[_segmentTotal] = { 
   { 0, 0, 1 }, //blank for level shifting hack and debug status
-  { 1, 1, 1 }, 
-  { 2, 6, 5 }, 
-  { 7, 11, 5 },
-  { 12, 15, 4 },
-  { 16, 19, 4 },
-  { 20, 23, 4 },
-  { 24, 26, 3 },
-  { 27, 29, 3 }
+  { 1, 2, 2 }, 
+  { 3, 8, 6 }, 
+  { 9, 14, 6 },
+  { 15, 19, 5 },
+  { 20, 24, 5 },
+  { 25, 29, 5 },
+  { 30, 33, 4 },
+  { 34, 39, 6 }
 };
 CHSV startColor( 144, 70, 64 );
 CHSV endColor( 31, 71, 69 );
@@ -212,7 +211,7 @@ void setup() {
 
   delay(3000);                                // Give the power, LED strip, etc. a couple of secs to stabilise
   setupLEDs();
-  setupUserInputs();                          //
+  setupUserInputs();                          
   setupMesh();
 
   //everything done? ok then..
