@@ -1,6 +1,3 @@
-/*----------------------------internal mesh messages----------------------------*/
-/*---------------------get passed to/from MQTT broker by bridge-----------------*/
-
 /*----------------------------messages - receive----------------------------*/
 void receiveMessage(uint32_t from, String msg)
 {
@@ -8,31 +5,11 @@ void receiveMessage(uint32_t from, String msg)
   String targetSub = msg.substring(0, firstMsgIndex);
   String msgSub = msg.substring(firstMsgIndex+1);
 
-/*
-  DEBUG_OVERLAY = checkBool(_integer1FromSerial);
-  setSunRise(_integer1FromSerial, _integer2FromSerial);             //???
-  _sunRiseEnabled = true;
-  //setSunSet(_integer1FromSerial, _integer2FromSerial);             //???
-  _sunRiseEnabled = false;
-  _sunRiseEnabled = checkBool(_integer1FromSerial);
-  _sunSetEnabled = checkBool(_integer1FromSerial);
-  setGlobalBrightness(_integer1FromSerial);
-  _modeCur = _integer1FromSerial;
-  _onOff = checkBool(_integer1FromSerial);
-*/
-
   if (targetSub == "lights/light/switch")
   {
-    if (msgSub == "ON")
-    {
-      _onOff = true;
-    }
-    else if (msgSub == "OFF")
-    {
-      _onOff = false;
-    }
+    if (msgSub == LIGHTS_ON) { _onOff = true; }
+    else if (msgSub == LIGHTS_OFF) { _onOff = false; }
     publishState(true);
-    //if (DEBUG_COMMS) { Serial.print(targetSub); Serial.print(" : "); Serial.println(msgSub); }
   } 
   else if (targetSub == "lights/brightness/set")
   {
@@ -44,67 +21,35 @@ void receiveMessage(uint32_t from, String msg)
       setGlobalBrightness(brightness);
       publishBrightness(true);
     }
-    //if (DEBUG_COMMS) { Serial.print(targetSub); Serial.println(brightness); }
   }
   else if (targetSub == "lights/mode")
   {
-    
-    if (msgSub == "Glow") 
-    { _modeCur = 0;
-      _modePresetSlotCur = 0; }
-    //else if (msgSub == "Sunrise") 
-    //{ _modeCur = 1; }
-    else if (msgSub == "Morning") 
-    { _modeCur = 2;
-      _modePresetSlotCur = 1; }
-    else if (msgSub == "Day") 
-    { _modeCur = 3;
-      _modePresetSlotCur = 2; }
-    else if (msgSub == "Working") 
-    { _modeCur = 4;
-      _modePresetSlotCur = 3; }
-    else if (msgSub == "Evening") 
-    { _modeCur = 5;
-      _modePresetSlotCur = 4; }
-    //else if (msgSub == "Sunset") 
-    //{ _modeCur = 6; }
-    else if (msgSub == "Night") 
-    { _modeCur = 7;
-      _modePresetSlotCur = 5; }
-    else if (msgSub == "Effect") 
-    { _modeCur = 8; }
+    if (msgSub == "Glow")         { _modeCur = 0; _modePresetSlotCur = 0; }
+  //else if (msgSub == "Sunrise") { _modeCur = 1; }
+    else if (msgSub == "Morning") { _modeCur = 2; _modePresetSlotCur = 1; }
+    else if (msgSub == "Day")     { _modeCur = 3; _modePresetSlotCur = 2; }
+    else if (msgSub == "Working") { _modeCur = 4; _modePresetSlotCur = 3; }
+    else if (msgSub == "Evening") { _modeCur = 5; _modePresetSlotCur = 4; }
+  //else if (msgSub == "Sunset")  { _modeCur = 6; }
+    else if (msgSub == "Night")   { _modeCur = 7; _modePresetSlotCur = 5; }
+    else if (msgSub == "Effect")  { _modeCur = 8; }
     else { }
 
     _modeString = msgSub; // redundant ???
-    
-    //for (int i = 0; i < _modeNum; i++) {
-    //  if (msgSub == modeName[i]) {
-    //    _modeCur = i;
-    //    _modeString = msgSub;
-    //    break;
-    //  }
-    //}
-    
     //publishMode(true);
-    //if (DEBUG_COMMS) { Serial.print(targetSub); Serial.println(msgSub); }
   }
   else if (targetSub == "lights/mode/coltemp")
   {
-    if (msgSub == "Warm") 
-    { setColorTemp(0); }
-    else if (msgSub == "Standard") 
-    { setColorTemp(1); }
-    else if (msgSub == "CoolWhite") 
-    { setColorTemp(2); }
+    if (msgSub == "Warm")           { setColorTemp(0); }
+    else if (msgSub == "Standard")  { setColorTemp(1); }
+    else if (msgSub == "CoolWhite") { setColorTemp(2); }
     
-    //publishColorTemp(true);
-    //if (DEBUG_COMMS) { Serial.print(targetSub); Serial.println(msgSub); }
+    publishColorTemp(true);
   }
   else if (targetSub == "lights/mode/effect")
   {
     // 
     publishEffect(true);
-    //if (DEBUG_COMMS) { Serial.print(targetSub); Serial.println(msgSub); }
   }
   else if (targetSub == "sunrise")
   {
@@ -160,17 +105,33 @@ void receiveMessage(uint32_t from, String msg)
   /*
    * Breath : (noun) Refers to a full cycle of breathing. It can also refer to the air that is inhaled or exhaled.
    */
+  else if (targetSub == "breath")
+  {
+    // trigger only (global synced)
+    // note: the single mesh msg of 'breath' is used for synced global breathing
+    if (msgSub == ON) {
+      _isBreathingSynced = true;                    // set sync to global
+      _isBreathing = true;                          // start synced breathing
+    }
+    else if (msgSub == OFF) {
+      _isBreathing = false;                         // stop breathing
+      _isBreathingSynced = false;                   // set sync to local
+    }
+    //publishBreath(false);
+  }
   else if (targetSub == "lights/breath")
   {
-    if (msgSub == LIGHTS_ON) {
-      
-      //publishMode(true);
+    // trigger only (local)
+    // note: the single mesh msg of 'breath' is used for synced global breathing
+    if (msgSub == ON) {
+      _isBreathingSynced = false;                   // set sync to local
+      _isBreathing = true;                          // start local breathing
     }
-    else if (msgSub == LIGHTS_OFF) {
-      
-      //publishMode(true);
+    else if (msgSub == OFF) {
+      _isBreathing = false;                         // stop breathing
+      _isBreathingSynced = false;                   // set sync to local
     }
-    //if (DEBUG_COMMS) { Serial.print(targetSub); Serial.println(msgSub); }
+    //publishLightsBreath(false);
   }
   else if (targetSub == "lights/breath/xyz")
   {
@@ -181,37 +142,56 @@ void receiveMessage(uint32_t from, String msg)
   {
     // set positional mode
     // independent, global
+    if (msgSub == "Independent") { }
+    else if (msgSub == "Global") { }
     //if (DEBUG_COMMS) { Serial.print(targetSub); Serial.println(msgSub); }
   }
   else if(targetSub == "debug/general/set") 
-  {
-    if (msgSub == LIGHTS_ON) { DEBUG_GEN = true; } 
-    else if (msgSub == LIGHTS_OFF) { DEBUG_GEN = false; }
+  { 
+    if (msgSub == ON) { DEBUG_GEN = true; } 
+    else if (msgSub == OFF) { DEBUG_GEN = false; }
     publishDebugGeneralState(false);
   }
   else if (targetSub == "debug/overlay/set")
   {
-    if (msgSub == LIGHTS_ON) { DEBUG_OVERLAY = true; }
-    else if (msgSub == LIGHTS_OFF) { DEBUG_OVERLAY = false; }
+    if (msgSub == ON) { DEBUG_OVERLAY = true; }
+    else if (msgSub == OFF) { DEBUG_OVERLAY = false; }
     publishDebugOverlayState(false);
   }
   else if (targetSub == "debug/meshsync/set")
   {
-    if (msgSub == LIGHTS_ON) { DEBUG_MESHSYNC = true; }
-    else if (msgSub == LIGHTS_OFF) { DEBUG_MESHSYNC = false; }
+    if (msgSub == ON) { DEBUG_MESHSYNC = true; }
+    else if (msgSub == OFF) { DEBUG_MESHSYNC = false; }
     publishDebugMeshsyncState(false);
   }
   else if(targetSub == "debug/comms/set") 
   {
-    if (msgSub == LIGHTS_ON) { DEBUG_COMMS = true; } 
-    else if (msgSub == LIGHTS_OFF) { DEBUG_COMMS = false; }
+    if (msgSub == ON) { DEBUG_COMMS = true; } 
+    else if (msgSub == OFF) { DEBUG_COMMS = false; }
     publishDebugCommsState(false);
   }
-  else if(targetSub == "status/request") 
+  // don't really need an ON msg but using just to sure it wasn't sent in error
+  else if(targetSub == "debug/reset") { if (msgSub == ON) { doReset(); } }
+  else if(targetSub == "debug/restart") 
   {
-    if (msgSub == LIGHTS_ON) { publishStatusAll(false); } 
-    //else if (msgSub == LIGHTS_OFF) {  }
+    uint8_t restartTime = msg.toInt();
+    if (restartTime < 0 || restartTime > 255) { return; /* do nothing... */ } 
+    else { doRestart(restartTime); }
   }
+  else if(targetSub == "reset") { if (msgSub == ON) { doReset(); } }
+  else if(targetSub == "restart") 
+  {
+    uint8_t restartTime = msg.toInt();
+    if (restartTime < 0 || restartTime > 255) { return; /* do nothing... */ } 
+    else { doRestart(restartTime); }
+  }
+  else if(targetSub == "lockdown") 
+  {
+    uint8_t severity = msg.toInt();
+    if (severity < 0 || severity > 255) { return; /* do nothing... */ } 
+    else { doLockdown(severity); }
+  }
+  else if(targetSub == "status/request") { if (msgSub == ON) { publishStatusAll(false); }  }
   
   if (DEBUG_COMMS) { Serial.print(targetSub); Serial.print(" : "); Serial.println(msgSub); }
 }

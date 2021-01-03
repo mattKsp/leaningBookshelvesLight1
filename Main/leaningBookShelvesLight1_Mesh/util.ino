@@ -94,3 +94,15 @@ void printDigits(int digits)
   if (digits < 10) { Serial.print('0'); }
   Serial.print(digits);
 }
+
+void doReset() {
+  
+}
+
+void doRestart(uint8_t restartTime) {
+  
+}
+
+void doLockdown(uint8_t severity) {
+  
+}

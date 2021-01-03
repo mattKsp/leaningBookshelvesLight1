@@ -29,7 +29,7 @@
 
 /*----------------------------system----------------------------*/
 const String _progName = "leaningBookshelvesLight1_Mesh";
-const String _progVers = "0.520";             // new LED setup
+const String _progVers = "0.521";             // fix
 
 boolean DEBUG_GEN = false;                    // realtime serial debugging output - general
 boolean DEBUG_OVERLAY = false;                // show debug overlay on leds (eg. show segment endpoints, center, etc.)
@@ -40,7 +40,7 @@ boolean DEBUG_TIME = false;                   // time
 
 boolean _firstTimeSetupDone = false;          // starts false //this is mainly to catch an interrupt trigger (which isn't used anymore..) that happens during setup, but is usefull for other things
 volatile boolean _onOff = false;              // this should init false, then get activated by input - on/off true/false
-bool shouldSaveSettings = false;              // flag for saving data
+bool _shouldSaveSettings = false;              // flag for saving data
 bool runonce = true;                          // flag for sending states when first mesh conection
 //const int _mainLoopDelay = 0;               // just in case  - using FastLED.delay instead..
 
@@ -99,12 +99,12 @@ const int _modePresetSlotNum = 6;
 int _modePreset[_modePresetSlotNum] = { 0, 2, 3, 4, 5, 7 }; //test basic, tap bt to cycle around 6 mode slots   //expand to array or struct later for more presets
 volatile int _modeCur = 0;                    // current mode in use - this is not the var you are looking for.. try _modePresetSlotCur
 int _modePresetSlotCur = 0;                   // the current array pos (slot) in the current preset, as opposed to..      //+/- by userInput
-String modeName[_modeNum] = { "Glow", "Sunrise", "Morning", "Day", "Working", "Evening", "Sunset", "Night", "Effect" };
+String _modeName[_modeNum] = { "Glow", "Sunrise", "Morning", "Day", "Working", "Evening", "Sunset", "Night", "Effect" };
 int _saveCurMode = 0;
 
 const int _colorTempNum = 3;                  // 3 for now
 int _colorTempCur = 1;                        // current colour temperature
-String colorTempName[_colorTempNum] = { "Warm", "Standard", "CoolWhite" }; // color temperature sub-mode names for the main "Working" mode.
+String _colorTempName[_colorTempNum] = { "Warm", "Standard", "CoolWhite" }; // color temperature sub-mode names for the main "Working" mode.
 
 /*-----------------sunrise/set------------------*/
 boolean _sunRiseEnabled = false;
@@ -121,10 +121,19 @@ int _sunSetStateCur = 0;                      // current sunset internal state (
 Mpr121 mpr121;                                // init MPR121 on I2C
 u16 touch_status_flag[CHANNEL_NUM] = { 0 };   // u16 = unsigned short
 
+/*----------------------------cooling----------------------------*/
+// temperature sensor for the enclosure
+// fans
+byte _temperatureCur = 0;                     // the current temperature in the enclosure
+byte _temperatureOn = 28;                     // temp at which the fans are turned on (temp rising)
+byte _temperatureOff = 24;                    // temp at which the fans are turned off (temp falling)
+boolean _fansEnabled = false;                 // are the fans on?
+//byte _fansSpeed = 255;                        // the speed at which the fans run
+
 /*----------------------------LED----------------------------*/
 // might limit power draw even further if add usb charge ports to the system
 // or use usb chips and change power draw if usb device attached and charging
-#define MAX_POWER_DRAW 5700                   // limit power draw to ...Amp at 5v
+#define MAX_POWER_DRAW 5700                   // limit power draw to ...Amp at 5v - going to be a 12A supply. I think 9.6A normal and 12A max draw.
 typedef struct {
   byte first;
   byte last;
@@ -213,6 +222,7 @@ void setup() {
   setupLEDs();
   setupUserInputs();                          
   setupMesh();
+  setupCooling();
 
   //everything done? ok then..
   Serial.print(F("Setup done"));
@@ -236,6 +246,7 @@ void loop() {
   mesh.update();
   loopUserInputs();
   loopModes();
+  loopCooling();
   
   if (DEBUG_OVERLAY) {
     checkSegmentEndpoints();
@@ -243,10 +254,10 @@ void loop() {
   }
   
   EVERY_N_SECONDS(30) {                       // too much ???
-    if (shouldSaveSettings == true)
+    if (_shouldSaveSettings == true)
     { 
       //saveSettings(); 
-      shouldSaveSettings = false; 
+      _shouldSaveSettings = false; 
     }
   }
 
