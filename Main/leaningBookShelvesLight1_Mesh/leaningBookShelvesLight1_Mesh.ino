@@ -1,6 +1,6 @@
 /*
     'leaningBookshelvesLight1_Mesh' by Thurstan. LED strip bookshelves light.
-    Copyright (C) 2020 MTS Standish (Thurstan|mattKsp)
+    Copyright (C) 2021 MTS Standish (Thurstan|mattKsp)
     
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -29,7 +29,7 @@
 
 /*----------------------------system----------------------------*/
 const String _progName = "leaningBookshelvesLight1_Mesh";
-const String _progVers = "0.521";             // fix
+const String _progVers = "0.522";             // 2021 install and additions
 
 boolean DEBUG_GEN = false;                    // realtime serial debugging output - general
 boolean DEBUG_OVERLAY = false;                // show debug overlay on leds (eg. show segment endpoints, center, etc.)
@@ -40,7 +40,7 @@ boolean DEBUG_TIME = false;                   // time
 
 boolean _firstTimeSetupDone = false;          // starts false //this is mainly to catch an interrupt trigger (which isn't used anymore..) that happens during setup, but is usefull for other things
 volatile boolean _onOff = false;              // this should init false, then get activated by input - on/off true/false
-bool _shouldSaveSettings = false;              // flag for saving data
+bool _shouldSaveSettings = false;             // flag for saving data
 bool runonce = true;                          // flag for sending states when first mesh conection
 //const int _mainLoopDelay = 0;               // just in case  - using FastLED.delay instead..
 
@@ -49,41 +49,9 @@ bool _isBreathOverlaid = false;               // toggle for whether breath is ov
 bool _isBreathingSynced = false;              // breath sync local or global
 
 /*----------------------------pins----------------------------*/
-
-/*
- / Pinout Wemos D32 Pro (ESP32-WROVER)
- / ..remember to disconnect all pins before re-flashing
-
- / 36 - VP (Analog Input) (RTC_GPIO0 interrupt 0)
- / 39 - VN (Analog Input) (RTC_GPIO0 interrupt 3)
- / 34 - ADC1_CH6 (Analog Input)
- / 32 - ADC1_CH4 / TFT_LED (Analog Input)
-//33 - ADC1_CH5 / TFT_RST (Analog Input)
-//25 - DAC_1 (Analog Output)
-//26 - DAC_2 (Analog Output)
-//27 - TFT_DC
-//14 - TFT_CS
-//12 - TS_CS
-//13
-
-//23 - MOSI
-//22 - SCL
-//1 - TX
-//3 - RX
-//21 - SDA
-//19 - MISO
-//18 - SCK
-//5 - SS
-//(17) NC
-//(16) NC
-//4
-//0
-//2
-//15
-
-// 5v regulated power is connected to USB (VBUS)
-*/
-
+// 5v regulated power is connected to USB (VBUS).
+// I2C (for touch) is connected through a dedicated connector.
+// LED data lines are level shifted using an SN74HC14N.
 const int _ledDOut0Pin = 4;                   // DOut 0 -> LED strip 0 DIn   - right 2 (short)
 const int _ledDOut1Pin = 0;                   // DOut 1 -> LED strip 1 DIn   - right (long)
 const int _ledDOut2Pin = 2;                   // DOut 2 -> LED strip 2 DIn   - middle
@@ -96,15 +64,23 @@ const int _ledDOut3Pin = 15;                  // DOut 3 -> LED strip 3 DIn   - l
 /*----------------------------modes----------------------------*/
 const int _modeNum = 9;
 const int _modePresetSlotNum = 6;
-int _modePreset[_modePresetSlotNum] = { 0, 2, 3, 4, 5, 7 }; //test basic, tap bt to cycle around 6 mode slots   //expand to array or struct later for more presets
-volatile int _modeCur = 0;                    // current mode in use - this is not the var you are looking for.. try _modePresetSlotCur
-int _modePresetSlotCur = 0;                   // the current array pos (slot) in the current preset, as opposed to..      //+/- by userInput
 String _modeName[_modeNum] = { "Glow", "Sunrise", "Morning", "Day", "Working", "Evening", "Sunset", "Night", "Effect" };
-int _saveCurMode = 0;
+volatile int _modeCur = 0;                    // current mode in use - this is not the var you are looking for.. try _modePresetSlotCur
+int _modePreset[_modePresetSlotNum] = { 0, 2, 3, 4, 5, 7 }; //test basic, tap bt to cycle around 6 mode slots   //expand to array or struct later for more presets
+int _modePresetSlotCur = 0;                   // the current array pos (slot) in the current preset, as opposed to..      //+/- by userInput
+int _saveCurMode = 0;                         // temp
 
 const int _colorTempNum = 3;                  // 3 for now
 int _colorTempCur = 1;                        // current colour temperature
 String _colorTempName[_colorTempNum] = { "Warm", "Standard", "CoolWhite" }; // color temperature sub-mode names for the main "Working" mode.
+
+const int _effectNum = 6;
+int _effectCur = 0;
+String _effectName[_effectNum] = { "Fire2012", "Confetti", "AddGlitter", "Rainbow", "RainbowWithGlitter", "Rain" };
+
+const int _coverageNum = 6;                   // 6 for now. LED coverage mask for whole structure.
+int _coverageCur = 0;                         // current coverage layer in use.
+String _coverageName[_coverageNum] = {"Full", "HiCut", "LowCut", "HiEdgeCut", "FullEdgeCut", "BackProfile" };
 
 /*-----------------sunrise/set------------------*/
 boolean _sunRiseEnabled = false;
@@ -121,51 +97,72 @@ int _sunSetStateCur = 0;                      // current sunset internal state (
 Mpr121 mpr121;                                // init MPR121 on I2C
 u16 touch_status_flag[CHANNEL_NUM] = { 0 };   // u16 = unsigned short
 
-/*----------------------------cooling----------------------------*/
-// temperature sensor for the enclosure
-// fans
-byte _temperatureCur = 0;                     // the current temperature in the enclosure
-byte _temperatureOn = 28;                     // temp at which the fans are turned on (temp rising)
-byte _temperatureOff = 24;                    // temp at which the fans are turned off (temp falling)
-boolean _fansEnabled = false;                 // are the fans on?
-//byte _fansSpeed = 255;                        // the speed at which the fans run
+/*----------------------------HVAC - Inc. Control enclosure and Bookshelves----------------------------*/
+/*-- temperature sensor for the enclosure and shelving --*/
+byte _temperatureEnclosureCur = 1;            // the current temperature in the enclosure
+//byte _temperatureShelvesCur[4][8] = { {1,1,1,1,1,1,0,0}, {1,1,1,1,1,1,1,1}, {1,1,1,1,1,1,1,1}, {1,1,1,1,1,1,1,1} };
+byte _temperatureTopCur = 1;                  // the current temperature on the longest leg at the very top of the bookshelves.
+byte _temperatureEnclosureOn[2] = { 28, 38 };  // temp at which the fans are turned on (temp rising) and temp at which the fans are fully On.
+//const byte _temperatureEnclosureOnMax = 38;   // temp at which the fans are fully On.
+byte _temperatureEnclosureOff[2] = { 24, 20 };   // temp at which the fans start slowing down (turning off, temp falling) and temp at which the fans are fully Off.
+//const byte _temperatureEnclosureOffMin = 20;  // temp at which the fans are fully Off.
+/*-- fans for the enclosure and shelving --*/
+boolean _fansEnclosureEnabled = false;        // are the enclosure fans on?
+//boolean _fansShelvesEnabled[4][8] = { {false,false,false,false,false,false,false,false}, {false,false,false,false,false,false,false,false}, {false,false,false,false,false,false,false,false}, {false,false,false,false,false,false,false,false} };                 // are the fans on?
+boolean _fansTopEnabled = false;              // is the very top fan on?
+byte _fansEnclosureSpeed = 255;               // the speed at which the enclosure fans run.
+//byte _fansShelvesSpeed[4][8] = {};            // the speed at which the shelf fans run.
+byte _fansTopSpeed = 255;                     // the speed at which the top fan runs.
 
 /*----------------------------LED----------------------------*/
 // might limit power draw even further if add usb charge ports to the system
 // or use usb chips and change power draw if usb device attached and charging
-#define MAX_POWER_DRAW 5700                   // limit power draw to ...Amp at 5v - going to be a 12A supply. I think 9.6A normal and 12A max draw.
+// 39 x 0.02A = 0.78A x 3 = 2.34 x 3 = 7.02
+// 26 x 0.02A = 0.52A x 3 = 1.56
+// 7.02 + 1.56 = 8.58 Amp draw for all lights on full white.
+// control board 500mA
+// esp8266 device 250mA
+#define MAX_POWER_DRAW 8580                   // limit power draw to ...Amp at 5v - going to be a 12A supply. I think 9.6A normal and 12A max draw + any extra lights, pheripherals, fans, sensors, devices.
 typedef struct {
   byte first;
   byte last;
   byte total;
 } LED_SEGMENT;
-const int _ledNumOfStrips = 4;                // 3x LED strips (39, 39, 39, 24)
+const int _ledNumOfStrips = 4;                // 3x LED strips (39, 39, 39, 26)
 const int _ledNumPerStrip = 40;               // Xm strip with LEDs (1 + 39)
-const int _segmentTotal = 9;                 // total segments (shelves) on each strip (1 + 8)
+const int _segmentTotal = 9;                  // total segments (shelves) on each strip (1 + 8)
 const int _ledGlobalBrightness = 255;         // global brightness - use this to cap the brightness
 int _ledGlobalBrightnessCur = 255;            // current global brightness - adjust this one!
 int _ledBrightnessIncDecAmount = 10;          // the brightness amount to increase or decrease
-#define UPDATES_PER_SECOND 120                // main loop FastLED show delay //100
-//need to add 1 led to the beginning to use as a blank to jump from 3.3 to 5v (cheap hack for level shifting)
-
+#define UPDATES_PER_SECOND 120                // main loop FastLED show delay //100 = FastLED.delay(1000 / UPDATES_PER_SECOND);
+//LED_SEGMENT ledSegment[_segmentTotal] = { 
+//  { 0, 0, 1 },    // blank for level shifting hack and debug status
+//  { 1, 2, 2 }, 
+//  { 3, 8, 6 },    // shelves start
+//  { 9, 14, 6 },
+//  { 15, 19, 5 },
+//  { 20, 24, 5 },
+//  { 25, 29, 5 },  // short end upright ends after 2nd pixel at this level
+//  { 30, 33, 4 },
+//  { 34, 39, 6 }
+//};
 LED_SEGMENT ledSegment[_segmentTotal] = { 
-  { 0, 0, 1 }, //blank for level shifting hack and debug status
-  { 1, 2, 2 }, 
-  { 3, 8, 6 }, 
-  { 9, 14, 6 },
-  { 15, 19, 5 },
-  { 20, 24, 5 },
-  { 25, 29, 5 },
-  { 30, 33, 4 },
-  { 34, 39, 6 }
+  { 0, 1, 2 }, 
+  { 2, 7, 6 },    // shelves start
+  { 8, 13, 6 },
+  { 14, 18, 5 },
+  { 19, 23, 5 },
+  { 24, 28, 5 },  // short end upright ends after 2nd pixel at this level
+  { 29, 32, 4 },
+  { 33, 38, 6 }
 };
 CHSV startColor( 144, 70, 64 );
 CHSV endColor( 31, 71, 69 );
 CRGB startColor_RGB( 3, 144, 232 );
 CRGB endColor_RGB( 249, 180, 1 );
+uint8_t gHue = 0; // rotating "base color"
                                               
 CRGB leds[_ledNumOfStrips][_ledNumPerStrip];  // global RGB array matrix
-int _ledState = LOW;                          // use to toggle LOW/HIGH (ledState = !ledState)
 
 #define TEMPERATURE_0 WarmFluorescent
 #define TEMPERATURE_1 StandardFluorescent
@@ -222,7 +219,7 @@ void setup() {
   setupLEDs();
   setupUserInputs();                          
   setupMesh();
-  setupCooling();
+  setupHvac();
 
   //everything done? ok then..
   Serial.print(F("Setup done"));
@@ -246,11 +243,11 @@ void loop() {
   mesh.update();
   loopUserInputs();
   loopModes();
-  loopCooling();
+  //loopHvac();
   
   if (DEBUG_OVERLAY) {
     checkSegmentEndpoints();
-    //showColorTempPx();
+    showColorTempPx();
   }
   
   EVERY_N_SECONDS(30) {                       // too much ???
@@ -265,4 +262,8 @@ void loop() {
   FastLED.delay(1000 / UPDATES_PER_SECOND);
   //
   //delay(_mainLoopDelay);  //using FastLED.delay instead..
+
+  if (_modeCur == 8) {
+    EVERY_N_MILLISECONDS( 20 ) { _gHue++; } // slowly cycle the "base color" through the rainbow (for "effect" mode).
+  }
 }

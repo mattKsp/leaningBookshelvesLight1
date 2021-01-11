@@ -15,7 +15,7 @@ void incDecPresetSlot_prtB() {
   if(_modePresetSlotCur >= _modePresetSlotNum || _modePresetSlotCur < 0) { 
     _modePresetSlotCur = 0;                     //TEMP rollover catch
   }
-  _modeCur = _modePreset[_modePresetSlotCur];
+  _modeCur = _modePreset[_modePresetSlotCur]; // set the current mode from the preset list.
 }
 
 /*
@@ -26,8 +26,33 @@ void setColorTemp(int i) {
 }
 void cycleColorTemp() {
   _colorTempCur += 1;
-  if (_colorTempCur >= _colorTempNum) 
-  { _colorTempCur = 0; }  // rollover
+  if (_colorTempCur >= _colorTempNum) { _colorTempCur = 0; }  // rollover
+}
+
+/*
+ * Mode/ Effect utils
+ */
+void setEffect(int i) {
+  if (i < 0) { _effectCur = 0; }
+  else if (i >= _effectNum) { _effectCur = _effectNum - 1; }
+  else { _effectCur = i; }
+}
+void cycleEffect() {
+  _effectCur += 1;
+  if (_effectCur >= _effectNum) { _effectCur = 0; }  // rollover
+}
+
+/*
+ * Coverage mask utils
+ */
+void setCoverage(int i) {
+  if (i < 0) { _coverageCur = 0; }
+  else if (i >= _coverageNum) { _coverageCur = _coverageNum - 1; }
+  else { _coverageCur = i; }
+}
+void cycleCoverage() {
+  _coverageCur += 1;
+  if (_coverageCur >= _coverageNum) { _coverageCur = 0; }  // rollover
 }
 
 /*
@@ -66,8 +91,8 @@ void checkSegmentEndpoints() {
     fill_solid( leds[i], _ledNumPerStrip, CRGB(0,0,0));
     
     for(int j = 1; j < _segmentTotal; j++) {
-      leds[i][ledSegment[_segmentTotal].first] = CRGB(i*20, j*50, 0);
-      leds[i][ledSegment[_segmentTotal].last] = CRGB(0, j*50, i*20);
+      leds[i][ledSegment[j].first] = CRGB(i*20, j*50, 0);
+      leds[i][ledSegment[j].last] = CRGB(0, j*50, i*20);
     }
   }
   
@@ -80,7 +105,7 @@ void checkSegmentEndpoints() {
  This sets the first LED to show the current colour temperature
  */
 void showColorTempPx() {
-  leds[0][1] = _colorTempCur;                  //show indicator pixel
+  leds[3][ledSegment[6].first+1] = _colorTempCur;                  //show indicator pixel
   //leds[0] = TEMPERATURE_1;                  //show indicator pixel
 }
 

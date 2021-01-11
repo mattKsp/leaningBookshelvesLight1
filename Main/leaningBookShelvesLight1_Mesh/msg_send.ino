@@ -47,7 +47,14 @@ void publishColorTemp(bool save) {
 
 void publishEffect(bool save)
 {
-  //publishMeshMsgSingleString("publishEffect", "lights/mode/effect", , save);
+  /* String _effectName[_effectNum] = { "Fire2012", "Confetti", "AddGlitter", "Rainbow", "RainbowWithGlitter", "Rain" }; */
+  publishMeshMsgSingleString("publishEffect", "lights/mode/effect", _effectName[_effectCur], save);
+}
+
+void publishCoverage(bool save)
+{
+  /* String _coverageName[_coverageNum] = {"Full", "HiCut", "LowCut", "HiEdgeCut", "FullEdgeCut", "BackProfile" }; */
+  publishMeshMsgSingleString("publishCoverage", "lights/mode/coverage", _coverageName[_coverageCur], save);
 }
 
 void publishDebugGeneralState(bool save)

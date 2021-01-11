@@ -43,6 +43,8 @@ void loopModes() {
       fadeToBlackBy( leds[i], _ledNumPerStrip, 30); 
     } 
   } //END onOff else
+  
+//  coverageMask();   // see display tab
 }
 
 /*----------------------------modes----------------------------*/
@@ -109,7 +111,7 @@ void mode5() {
   }
 }
 
-//mode6 - see 'sunRiseSet'
+//mode6 - name is sunset! see 'sunRiseSet'
 
 void mode7() {
   //name is night!
@@ -120,10 +122,22 @@ void mode7() {
 }
 
 void mode8() {
-  //name is changing!
+  //name is effect!
 //  for(int i = 0; i < _ledNumOfStrips; i++) {
 //    fill_solid( leds[i], _ledNumPerStrip, CRGB(0, 0, 255));
 //  }
+  /* String _effectName[_effectNum] = { "Fire2012", "Confetti", "AddGlitter", "Rainbow", "RainbowWithGlitter", "Rain" }; */
+  if (_effectCur == 0) {
+    fire2012();
+  } else if (_effectCur == 1) {
+    confetti();
+  } else if (_effectCur == 2) {
+    addGlitter(80);
+  } else if (_effectCur == 3) {
+    rainbow();
+  } else if (_effectCur == 4) {
+    rainbowWithGlitter();
+  } else if (_effectCur == 5) {
+    rain();
+  }
 }
-
-

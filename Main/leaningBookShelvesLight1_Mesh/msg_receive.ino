@@ -24,7 +24,7 @@ void receiveMessage(uint32_t from, String msg)
   }
   else if (targetSub == "lights/mode")
   {
-    if (msgSub == "Glow")         { _modeCur = 0; _modePresetSlotCur = 0; }
+    if (msgSub == "Glow")         { _modeCur = 0; _modePresetSlotCur = 0; } /*= _modePreset[0];*/ 
   //else if (msgSub == "Sunrise") { _modeCur = 1; }
     else if (msgSub == "Morning") { _modeCur = 2; _modePresetSlotCur = 1; }
     else if (msgSub == "Day")     { _modeCur = 3; _modePresetSlotCur = 2; }
@@ -40,7 +40,7 @@ void receiveMessage(uint32_t from, String msg)
   }
   else if (targetSub == "lights/mode/coltemp")
   {
-    if (msgSub == "Warm")           { setColorTemp(0); }
+    if      (msgSub == "Warm")      { setColorTemp(0); }
     else if (msgSub == "Standard")  { setColorTemp(1); }
     else if (msgSub == "CoolWhite") { setColorTemp(2); }
     
@@ -48,8 +48,26 @@ void receiveMessage(uint32_t from, String msg)
   }
   else if (targetSub == "lights/mode/effect")
   {
-    // 
+    /* String _effectName[_effectNum] = { "Fire2012", "Confetti", "AddGlitter", "Rainbow", "RainbowWithGlitter", "Rain" }; */
+    if      (msgSub == "Fire2012")            { setEffect(0); }
+    else if (msgSub == "Confetti")            { setEffect(1); }
+    else if (msgSub == "AddGlitter")          { setEffect(2); }
+    else if (msgSub == "Rainbow")             { setEffect(3); }
+    else if (msgSub == "RainbowWithGlitter")  { setEffect(4); }
+
     publishEffect(true);
+  }
+  else if (targetSub == "lights/mode/coverage")
+  {
+    /* String _coverageName[_coverageNum] = {"Full", "HiCut", "LowCut", "HiEdgeCut", "FullEdgeCut", "BackProfile" }; */
+    if      (msgSub == "Full")                { setCoverage(0); }
+    else if (msgSub == "HiCut")               { setCoverage(1); }
+    else if (msgSub == "LowCut")              { setCoverage(2); }
+    else if (msgSub == "HiEdgeCut")           { setCoverage(3); }
+    else if (msgSub == "FullEdgeCut")         { setCoverage(4); }
+    else if (msgSub == "BackProfile")         { setCoverage(5); }
+
+    //publishCoverage(true);
   }
   else if (targetSub == "sunrise")
   {
