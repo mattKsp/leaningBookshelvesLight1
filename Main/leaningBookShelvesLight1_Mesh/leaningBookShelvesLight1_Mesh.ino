@@ -29,7 +29,7 @@
 
 /*----------------------------system----------------------------*/
 const String _progName = "leaningBookshelvesLight1_Mesh";
-const String _progVers = "0.522";             // 2021 install and additions
+const String _progVers = "0.523";             // fix LED numbers to account for new level-shifting chip
 
 boolean DEBUG_GEN = false;                    // realtime serial debugging output - general
 boolean DEBUG_OVERLAY = false;                // show debug overlay on leds (eg. show segment endpoints, center, etc.)
@@ -129,8 +129,8 @@ typedef struct {
   byte total;
 } LED_SEGMENT;
 const int _ledNumOfStrips = 4;                // 3x LED strips (39, 39, 39, 26)
-const int _ledNumPerStrip = 40;               // Xm strip with LEDs (1 + 39)
-const int _segmentTotal = 9;                  // total segments (shelves) on each strip (1 + 8)
+const int _ledNumPerStrip = 39;               // Xm strip with LEDs
+const int _segmentTotal = 8;                  // total segments (shelves) on each strip
 const int _ledGlobalBrightness = 255;         // global brightness - use this to cap the brightness
 int _ledGlobalBrightnessCur = 255;            // current global brightness - adjust this one!
 int _ledBrightnessIncDecAmount = 10;          // the brightness amount to increase or decrease
@@ -160,7 +160,7 @@ CHSV startColor( 144, 70, 64 );
 CHSV endColor( 31, 71, 69 );
 CRGB startColor_RGB( 3, 144, 232 );
 CRGB endColor_RGB( 249, 180, 1 );
-uint8_t gHue = 0; // rotating "base color"
+uint8_t _gHue = 0; // rotating "base color"
                                               
 CRGB leds[_ledNumOfStrips][_ledNumPerStrip];  // global RGB array matrix
 

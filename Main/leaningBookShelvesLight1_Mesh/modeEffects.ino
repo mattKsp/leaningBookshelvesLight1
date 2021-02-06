@@ -45,7 +45,7 @@ void fire2012()
   static byte heat[_ledNumPerStrip-1];
 
   // Step 1.  Cool down every cell a little
-    for( int i = ledSegment[1].first; i < _ledNumPerStrip; i++) {
+    for( int i = ledSegment[0].first; i < _ledNumPerStrip; i++) {
       heat[i] = qsub8( heat[i],  random8(0, ((COOLING * 10) / _ledNumPerStrip) + 2));
     }
   
@@ -61,7 +61,7 @@ void fire2012()
     }
 
     // Step 4.  Map from heat cells to LED colors
-    for( int j = ledSegment[1].first; j < _ledNumPerStrip; j++) {
+    for( int j = ledSegment[0].first; j < _ledNumPerStrip; j++) {
       CRGB color = HeatColor( heat[j]);
       //int pixelnumber;
       //bool gReverseDirection = false;
@@ -71,7 +71,7 @@ void fire2012()
       //  pixelnumber = j;
       //}
       //leds[pixelnumber] = color;
-      leds[j] = color;
+//      leds[j] = color;          // incompatible types in assignment of 'CRGB' to 'CRGB [39]'
     }
 }
 
@@ -92,8 +92,8 @@ void confetti()
   for (int i = 0; i < _ledNumOfStrips; i++) {
     fadeToBlackBy( leds[i], _ledNumPerStrip, 10);
     int pos = random16(_ledNumPerStrip);
-    leds[i][pos] += CHSV( gHue + random8(64), 200, 255);
-    leds[i][0] = CRGB::Black;                                     // hack
+    leds[i][pos] += CHSV( _gHue + random8(64), 200, 255);
+    //leds[i][0] = CRGB::Black;                                     // hack
   }
 }
 
@@ -104,7 +104,7 @@ void addGlitter( fract8 chanceOfGlitter)
     if( random8() < chanceOfGlitter) {
       leds[i][ random16(_ledNumPerStrip) ] += CRGB::White;
     }
-    leds[i][0] = CRGB::Black;                                     // hack
+    //leds[i][0] = CRGB::Black;                                     // hack
   }
 }
 
@@ -114,7 +114,7 @@ void rainbow()
   // FastLED's built-in rainbow generator
   for (int i = 0; i < _ledNumOfStrips; i++) {
     fill_rainbow( leds[i], _ledNumPerStrip, _gHue, 7);
-    leds[i][0] = CRGB::Black;                                     // hack
+    //leds[i][0] = CRGB::Black;                                     // hack
   }
 }
 

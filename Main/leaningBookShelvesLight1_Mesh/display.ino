@@ -38,7 +38,7 @@ void coverageMask() {
   else if (_coverageCur == 2) {
     /* "LowCut" LED coverage - bottom edge is blacked out */
     for(int i = 0; i < _ledNumOfStrips; i++) {
-      for(int ii = ledSegment[1].first; ii <= ledSegment[1].last; ii3++) {
+      for(int ii = ledSegment[0].first; ii <= ledSegment[0].last; ii++) {
         leds[i][ii] = CRGB::Black;
       }
     }
@@ -71,10 +71,10 @@ void coverageMask() {
     for(int ii = ledSegment[6].first; ii <= ledSegment[8].last; ii++) {
       leds[2][ii] = CRGB::Black;
     }
-    for(int iii = ledSegment[1].first; iii < (ledSegment[6].first+2); iii++) {
+    for(int iii = ledSegment[0].first; iii < (ledSegment[6].first+2); iii++) {
       leds[3][iii] = CRGB::Black;
     }
-    for(int iiii = ledSegment[1].first; iiii <= ledSegment[1].last; iiii++) {
+    for(int iiii = ledSegment[0].first; iiii <= ledSegment[0].last; iiii++) {
       leds[0][iiii] = CRGB::Black;
       leds[1][iiii] = CRGB::Black;
       leds[2][iiii] = CRGB::Black;
