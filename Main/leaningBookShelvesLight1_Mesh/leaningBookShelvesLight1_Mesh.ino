@@ -29,7 +29,7 @@
 
 /*----------------------------system----------------------------*/
 const String _progName = "leaningBookshelvesLight1_Mesh";
-const String _progVers = "0.525";             // fix DEBUG_COMMS
+const String _progVers = "0.526";             // Serial.end has issues..
 
 boolean DEBUG_GEN = false;                    // realtime serial debugging output - general
 boolean DEBUG_OVERLAY = false;                // show debug overlay on leds (eg. show segment endpoints, center, etc.)
@@ -230,8 +230,6 @@ void setup() {
   Serial.println(s);
   Serial.println("-----");
   Serial.println("");
-
-  if (DEBUG_COMMS == false) { Serial.end(); }
 
   delay(1);
 }

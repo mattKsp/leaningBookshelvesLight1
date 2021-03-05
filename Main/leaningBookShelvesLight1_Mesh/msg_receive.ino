@@ -184,14 +184,8 @@ void receiveMessage(uint32_t from, String msg)
   }
   else if(targetSub == "debug/comms/set") 
   {
-    if (msgSub == ON) { 
-      DEBUG_COMMS = true;
-      if (!Serial){ Serial.begin(115200); }
-      } 
-    else if (msgSub == OFF) { 
-      DEBUG_COMMS = false;
-      if (Serial) { Serial.end(); }
-      }
+    if (msgSub == ON) { DEBUG_COMMS = true; } 
+    else if (msgSub == OFF) { DEBUG_COMMS = false; }
     publishDebugCommsState(false);
   }
   // don't really need an ON msg but using just to sure it wasn't sent in error

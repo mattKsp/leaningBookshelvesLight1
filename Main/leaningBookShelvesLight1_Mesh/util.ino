@@ -115,11 +115,9 @@ void showColorTempPx() {
  */
 void printDigits(int digits) 
 {
-  if (DEBUG_GEN && DEBUG_COMMS) {
   Serial.print(":");
   if (digits < 10) { Serial.print('0'); }
   Serial.print(digits);
-  }
 }
 
 void doReset() {
