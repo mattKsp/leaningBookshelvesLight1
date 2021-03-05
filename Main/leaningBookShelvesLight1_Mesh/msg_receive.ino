@@ -38,14 +38,14 @@ void receiveMessage(uint32_t from, String msg)
     _modeString = msgSub; // redundant ???
     //publishMode(true);
   }
-  else if (targetSub == "lights/mode/coltemp")
-  {
-    if      (msgSub == "Warm")      { setColorTemp(0); }
-    else if (msgSub == "Standard")  { setColorTemp(1); }
-    else if (msgSub == "CoolWhite") { setColorTemp(2); }
-    
-    publishColorTemp(true);
-  }
+//  else if (targetSub == "lights/mode/coltemp")
+//  {
+//    if      (msgSub == "Warm")      { setColorTemp(0); }
+//    else if (msgSub == "Standard")  { setColorTemp(1); }
+//    else if (msgSub == "CoolWhite") { setColorTemp(2); }
+//    
+//    publishColorTemp(true);
+//  }
   else if (targetSub == "lights/mode/effect")
   {
     /* String _effectName[_effectNum] = { "Fire2012", "Confetti", "AddGlitter", "Rainbow", "RainbowWithGlitter", "Rain" }; */
@@ -184,8 +184,14 @@ void receiveMessage(uint32_t from, String msg)
   }
   else if(targetSub == "debug/comms/set") 
   {
-    if (msgSub == ON) { DEBUG_COMMS = true; } 
-    else if (msgSub == OFF) { DEBUG_COMMS = false; }
+    if (msgSub == ON) { 
+      DEBUG_COMMS = true;
+      if (!Serial){ Serial.begin(115200); }
+      } 
+    else if (msgSub == OFF) { 
+      DEBUG_COMMS = false;
+      if (Serial) { Serial.end(); }
+      }
     publishDebugCommsState(false);
   }
   // don't really need an ON msg but using just to sure it wasn't sent in error

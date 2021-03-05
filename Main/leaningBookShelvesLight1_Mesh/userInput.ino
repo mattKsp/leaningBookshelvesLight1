@@ -5,12 +5,12 @@ void setupUserInputs() {
   if(mpr121.begin() < 0)
   {
     _touchActive = false;
-    if (DEBUG_USERINPUT) { Serial.println("Can't detect MPR121 device!!!!"); }
+    if (DEBUG_USERINPUT && DEBUG_COMMS) { Serial.println("Can't detect MPR121 device!!!!"); }
   }
   else
   {
     _touchActive = true;
-    if (DEBUG_USERINPUT) { Serial.println("MPR121 device init OK!"); }
+    if (DEBUG_USERINPUT && DEBUG_COMMS) { Serial.println("MPR121 device init OK!"); }
   }
   delay(100);
 }
@@ -63,7 +63,7 @@ void touchSensorsMPR121() {
           } // end if else _onOff = false
         } // end if i == 0
         
-        if (DEBUG_USERINPUT) { 
+        if (DEBUG_USERINPUT && DEBUG_COMMS) { 
           Serial.print("Touch ");
           Serial.print(i);
           Serial.println(" pressed.");
@@ -76,7 +76,7 @@ void touchSensorsMPR121() {
       {
         touch_status_flag[i] = 0;
 
-        if (DEBUG_USERINPUT) { 
+        if (DEBUG_USERINPUT && DEBUG_COMMS) { 
           Serial.print("Touch ");
           Serial.print(i);
           Serial.println(" released.");

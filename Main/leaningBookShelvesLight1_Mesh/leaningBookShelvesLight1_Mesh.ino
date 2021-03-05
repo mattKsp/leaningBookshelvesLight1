@@ -29,7 +29,7 @@
 
 /*----------------------------system----------------------------*/
 const String _progName = "leaningBookshelvesLight1_Mesh";
-const String _progVers = "0.523";             // fix LED numbers to account for new level-shifting chip
+const String _progVers = "0.525";             // fix DEBUG_COMMS
 
 boolean DEBUG_GEN = false;                    // realtime serial debugging output - general
 boolean DEBUG_OVERLAY = false;                // show debug overlay on leds (eg. show segment endpoints, center, etc.)
@@ -39,7 +39,8 @@ boolean DEBUG_USERINPUT = false;              // realtime serial debugging outpu
 boolean DEBUG_TIME = false;                   // time
 
 boolean _firstTimeSetupDone = false;          // starts false //this is mainly to catch an interrupt trigger (which isn't used anymore..) that happens during setup, but is usefull for other things
-volatile boolean _onOff = false;              // this should init false, then get activated by input - on/off true/false
+//volatile boolean _onOff = false;              // this should init false, then get activated by input - on/off true/false
+bool _onOff = false;
 bool _shouldSaveSettings = false;             // flag for saving data
 bool runonce = true;                          // flag for sending states when first mesh conection
 //const int _mainLoopDelay = 0;               // just in case  - using FastLED.delay instead..
@@ -174,7 +175,7 @@ painlessMesh  mesh;
 //char mesh_password[] = MESH_PASSWORD;
 //uint16_t mesh_port = MESH_PORT;
 String _modeString = "Glow";
-uint32_t id = DEVICE_ID_BRIDGE1;
+uint32_t id_bridge1 = DEVICE_ID_BRIDGE1;
 
 void receivedCallback(uint32_t from, String &msg ) {
   if (DEBUG_COMMS) { Serial.printf("leaningBookshelvesLight1_Mesh: Received from %u msg=%s\n", from, msg.c_str()); }
@@ -229,6 +230,8 @@ void setup() {
   Serial.println(s);
   Serial.println("-----");
   Serial.println("");
+
+  if (DEBUG_COMMS == false) { Serial.end(); }
 
   delay(1);
 }
