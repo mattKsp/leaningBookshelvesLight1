@@ -45,12 +45,12 @@ void fire2012()
   static byte heat[_ledNumPerStrip-1];
 
   // Step 1.  Cool down every cell a little
-    for( int i = ledSegment[0].first; i < _ledNumPerStrip; i++) {
-      heat[i] = qsub8( heat[i],  random8(0, ((COOLING * 10) / _ledNumPerStrip) + 2));
+    for( int i = ledSegment[1].first; i < (_ledNumPerStrip-1); i++) {
+      heat[i] = qsub8( heat[i],  random8(0, ((COOLING * 10) / (_ledNumPerStrip-1)) + 2));
     }
   
     // Step 2.  Heat from each cell drifts 'up' and diffuses a little
-    for( int k= _ledNumPerStrip - 1; k >= 2; k--) {
+    for( int k = (_ledNumPerStrip - 1); k >= 2; k--) {
       heat[k] = (heat[k - 1] + heat[k - 2] + heat[k - 2] ) / 3;
     }
     
@@ -61,7 +61,7 @@ void fire2012()
     }
 
     // Step 4.  Map from heat cells to LED colors
-    for( int j = ledSegment[0].first; j < _ledNumPerStrip; j++) {
+    for( int j = ledSegment[1].first; j < (_ledNumPerStrip-1); j++) {
       CRGB color = HeatColor( heat[j]);
       //int pixelnumber;
       //bool gReverseDirection = false;
@@ -93,7 +93,7 @@ void confetti()
     fadeToBlackBy( leds[i], _ledNumPerStrip, 10);
     int pos = random16(_ledNumPerStrip);
     leds[i][pos] += CHSV( _gHue + random8(64), 200, 255);
-    //leds[i][0] = CRGB::Black;                                     // hack
+    leds[i][0] = CRGB::Black;                                     // hack
   }
 }
 
@@ -104,7 +104,7 @@ void addGlitter( fract8 chanceOfGlitter)
     if( random8() < chanceOfGlitter) {
       leds[i][ random16(_ledNumPerStrip) ] += CRGB::White;
     }
-    //leds[i][0] = CRGB::Black;                                     // hack
+    leds[i][0] = CRGB::Black;                                     // hack
   }
 }
 

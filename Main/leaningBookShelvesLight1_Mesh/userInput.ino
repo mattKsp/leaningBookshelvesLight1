@@ -101,9 +101,9 @@ void touch2pressed() {                        // touch sensor 2 - mode down
   publishMode(true);
 }
 void touch3pressed() {                        // touch sensor 3 - sub-mode cycle
-  // sub-modes eg. cycle temperature modes (not implemented yet)
+  // sub-modes eg. cycle temperature modes (not implemented yet) or effects
   cycleColorTemp(); 
-  publishColorTemp(true);
+//  publishColorTemp(true);
 }
 void touch4pressed() {                        // touch sensor 4 - brightness up
   //increaseBrightness();
