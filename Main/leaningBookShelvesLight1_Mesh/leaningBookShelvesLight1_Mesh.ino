@@ -29,7 +29,7 @@
 
 /*----------------------------system----------------------------*/
 const String _progName = "leaningBookshelvesLight1_Mesh";
-const String _progVers = "0.527";             // Reverting back to level shifting hack cos don't have oscilloscope to control ringing
+const String _progVers = "0.528";             // turn off Serial to track down flickering
 
 boolean DEBUG_GEN = false;                    // realtime serial debugging output - general
 boolean DEBUG_OVERLAY = false;                // show debug overlay on leds (eg. show segment endpoints, center, etc.)
@@ -204,7 +204,7 @@ void delayReceivedCallback(uint32_t from, int32_t delay) {
 
 /*----------------------------MAIN----------------------------*/
 void setup() {
-  
+/*  
   Serial.begin(115200);
   
   Serial.println();
@@ -214,13 +214,13 @@ void setup() {
   Serial.println();
   Serial.print("..");
   Serial.println();
-
+*/
   delay(3000);                                // Give the power, LED strip, etc. a couple of secs to stabilise
   setupLEDs();
   setupUserInputs();                          
   setupMesh();
   setupHvac();
-
+/*
   //everything done? ok then..
   Serial.print(F("Setup done"));
   Serial.println("-----");
@@ -229,7 +229,7 @@ void setup() {
   Serial.println(s);
   Serial.println("-----");
   Serial.println("");
-
+*/
   delay(1);
 }
 
