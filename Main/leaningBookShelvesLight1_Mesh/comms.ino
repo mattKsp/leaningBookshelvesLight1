@@ -7,7 +7,7 @@ void setupMesh()
   //mesh.setDebugMsgTypes( ERROR | STARTUP );  // set before init() so that you can see startup messages
   //mesh.setDebugMsgTypes( CONNECTION | SYNC );
   
-  // There is an issue with ESP32 crashing. It seesm to work if the following debug options are left active.
+  // There is an issue with ESP32 crashing. It seems to work if the following debug options are left active.  ...for a while
   mesh.setDebugMsgTypes( ERROR | STARTUP | CONNECTION | SYNC  );
 
   //mesh.init( MESH_NAME, MESH_PASSWORD, MESH_PORT, WIFI_AP_STA, STATION_CHANNEL );

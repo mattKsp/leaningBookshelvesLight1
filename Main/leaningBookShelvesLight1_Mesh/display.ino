@@ -11,7 +11,6 @@ void setupLEDs() {
   //FastLED.addLeds<WS2812B, _ledDOut4Pin, GRB>(leds[4], _ledNumPerStrip).setCorrection( TypicalSMD5050 );
 
   _ledGlobalBrightnessCur = _ledGlobalBrightness;
-  //FastLED.setBrightness(CRGB(255,255,255));         //set RGB individual brightness
   FastLED.setBrightness(_ledGlobalBrightness);      //set global brightness
   FastLED.setTemperature(UncorrectedTemperature);   //set first temperature
 

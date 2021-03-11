@@ -22,23 +22,23 @@
 
 /*----------------------------libraries----------------------------*/
 #include <MT_LightControlDefines.h>
-//#include <FS.h>                               // a few saved settings
+#include <FS.h>                               // a few saved settings
 #include <FastLED.h>                          // WS2812B LED strip control and effects
 #include "Seeed_MPR121_driver.h"              // Grove - 12 Key Capacitive I2C Touch Sensor V2 (MPR121) - using edited version
 #include "painlessMesh.h"                     // https://github.com/gmag11/painlessMesh
 
 /*----------------------------system----------------------------*/
 const String _progName = "leaningBookshelvesLight1_Mesh";
-const String _progVers = "0.529";             // turned serial back on + fix crash (see comms debug options)
+const String _progVers = "0.530";             // 
 
-boolean DEBUG_GEN = false;                    // realtime serial debugging output - general
-boolean DEBUG_OVERLAY = false;                // show debug overlay on leds (eg. show segment endpoints, center, etc.)
-boolean DEBUG_MESHSYNC = false;               // show painless mesh sync by flashing some leds (no = count of active mesh nodes) 
-boolean DEBUG_COMMS = false;                  // realtime serial debugging output - comms
-boolean DEBUG_USERINPUT = false;              // realtime serial debugging output - user input
-boolean DEBUG_TIME = false;                   // time
+bool DEBUG_GEN = false;                       // realtime serial debugging output - general
+bool DEBUG_OVERLAY = false;                   // show debug overlay on leds (eg. show segment endpoints, center, etc.)
+bool DEBUG_MESHSYNC = false;                  // show painless mesh sync by flashing some leds (no = count of active mesh nodes) 
+bool DEBUG_COMMS = false;                     // realtime serial debugging output - comms
+bool DEBUG_USERINPUT = false;                 // realtime serial debugging output - user input
+bool DEBUG_TIME = false;                      // time
 
-boolean _firstTimeSetupDone = false;          // starts false //this is mainly to catch an interrupt trigger (which isn't used anymore..) that happens during setup, but is usefull for other things
+bool _firstTimeSetupDone = false;             // starts false //this is mainly to catch an interrupt trigger (which isn't used anymore..) that happens during setup, but is usefull for other things
 bool _onOff = false;                          // this should init false, then get activated by input - on/off true/false
 bool _shouldSaveSettings = false;             // flag for saving data
 bool runonce = true;                          // flag for sending states when first mesh conection
@@ -51,7 +51,6 @@ bool _isBreathingSynced = false;              // breath sync local or global
 /*----------------------------pins----------------------------*/
 // 5v regulated power is connected to USB (VBUS).
 // I2C (for touch) is connected through a dedicated connector.
-// [ LED data lines are level shifted using an SN74HC14N - this has issues - so reverted to level shift hack ]
 const int _ledDOut0Pin = 4;                   // DOut 0 -> LED strip 0 DIn   - right 2 (short)
 const int _ledDOut1Pin = 0;                   // DOut 1 -> LED strip 1 DIn   - right (long)
 const int _ledDOut2Pin = 2;                   // DOut 2 -> LED strip 2 DIn   - middle
@@ -83,10 +82,10 @@ int _coverageCur = 0;                         // current coverage layer in use.
 String _coverageName[_coverageNum] = {"Full", "HiCut", "LowCut", "HiEdgeCut", "FullEdgeCut", "BackProfile" };
 
 /*-----------------sunrise/set------------------*/
-boolean _sunRiseEnabled = false;
-boolean _sunSetEnabled = false;
-volatile boolean _sunRiseTriggered = false;
-volatile boolean _sunSetTriggered = false;
+bool _sunRiseEnabled = false;
+bool _sunSetEnabled = false;
+volatile bool _sunRiseTriggered = false;
+volatile bool _sunSetTriggered = false;
 int _sunRiseStateCur = 0;                     // current sunrise internal state (beginning, rise, end)
 int _sunSetStateCur = 0;                      // current sunset internal state (beginning, fall, end)
 
@@ -107,9 +106,9 @@ byte _temperatureEnclosureOn[2] = { 28, 38 };  // temp at which the fans are tur
 byte _temperatureEnclosureOff[2] = { 24, 20 };   // temp at which the fans start slowing down (turning off, temp falling) and temp at which the fans are fully Off.
 //const byte _temperatureEnclosureOffMin = 20;  // temp at which the fans are fully Off.
 /*-- fans for the enclosure and shelving --*/
-boolean _fansEnclosureEnabled = false;        // are the enclosure fans on?
+bool _fansEnclosureEnabled = false;        // are the enclosure fans on?
 //boolean _fansShelvesEnabled[4][8] = { {false,false,false,false,false,false,false,false}, {false,false,false,false,false,false,false,false}, {false,false,false,false,false,false,false,false}, {false,false,false,false,false,false,false,false} };                 // are the fans on?
-boolean _fansTopEnabled = false;              // is the very top fan on?
+bool _fansTopEnabled = false;              // is the very top fan on?
 byte _fansEnclosureSpeed = 255;               // the speed at which the enclosure fans run.
 //byte _fansShelvesSpeed[4][8] = {};            // the speed at which the shelf fans run.
 byte _fansTopSpeed = 255;                     // the speed at which the top fan runs.
