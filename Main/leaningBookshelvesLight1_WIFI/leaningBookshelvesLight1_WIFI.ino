@@ -1,5 +1,5 @@
 /*
-    'leaningBookshelvesLight1_Mesh' by Thurstan. LED strip bookshelves light.
+    'leaningBookshelvesLight1_WIFI' by Thurstan. LED strip bookshelves light.
     Copyright (C) 2021 MTS Standish (Thurstan|mattKsp)
     
     This program is free software: you can redistribute it and/or modify
@@ -23,34 +23,33 @@
 /*----------------------------libraries----------------------------*/
 #include <MT_LightControlDefines.h>
 #include <FS.h>                               // a few saved settings
+#include <WiFi.h>                             // 
+#include <ArduinoJson.h>                      // https://github.com/bblanchon/ArduinoJson
+#include <PubSubClient.h>                     // https://github.com/knolleary/pubsubclient
 #include <FastLED.h>                          // WS2812B LED strip control and effects
 #include "Seeed_MPR121_driver.h"              // Grove - 12 Key Capacitive I2C Touch Sensor V2 (MPR121) - using edited version
-#include "painlessMesh.h"                     // https://github.com/gmag11/painlessMesh
 
 /*----------------------------system----------------------------*/
-const String _progName = "leaningBookshelvesLight1_Mesh";
-const String _progVers = "0.531";             // 
+const String _progName = "leaningBookshelvesLight1_WIFI";
+const String _progVers = "0.100";             // WIFI version init
 
 bool DEBUG_GEN = false;                       // realtime serial debugging output - general
 bool DEBUG_OVERLAY = false;                   // show debug overlay on leds (eg. show segment endpoints, center, etc.)
 bool DEBUG_MESHSYNC = false;                  // show painless mesh sync by flashing some leds (no = count of active mesh nodes) 
-bool DEBUG_COMMS = false;                     // realtime serial debugging output - comms
+bool DEBUG_COMMS = true;                     // realtime serial debugging output - comms
 bool DEBUG_USERINPUT = false;                 // realtime serial debugging output - user input
 bool DEBUG_TIME = false;                      // time
 
 bool _firstTimeSetupDone = false;             // starts false //this is mainly to catch an interrupt trigger (which isn't used anymore..) that happens during setup, but is usefull for other things
 bool _onOff = false;                          // this should init false, then get activated by input - on/off true/false
 bool _shouldSaveSettings = false;             // flag for saving data
-bool runonce = true;                          // flag for sending states when first mesh conection
-//const int _mainLoopDelay = 0;               // just in case  - using FastLED.delay instead..
+bool _runonce = true;                         // flag for sending states when first mesh conection
 
 bool _isBreathing = false;                    // toggle for breath
 bool _isBreathOverlaid = false;               // toggle for whether breath is overlaid on top of modes
 bool _isBreathingSynced = false;              // breath sync local or global
 
 /*----------------------------pins----------------------------*/
-// 5v regulated power is connected to USB (VBUS).
-// I2C (for touch) is connected through a dedicated connector.
 const int _ledDOut0Pin = 4;                   // DOut 0 -> LED strip 0 DIn   - right 2 (short)
 const int _ledDOut1Pin = 0;                   // DOut 1 -> LED strip 1 DIn   - right (long)
 const int _ledDOut2Pin = 2;                   // DOut 2 -> LED strip 2 DIn   - middle
@@ -59,7 +58,7 @@ const int _ledDOut3Pin = 15;                  // DOut 3 -> LED strip 3 DIn   - l
 //const int _ledDOut4Pin = 14;                  // DOut 4 -> LED strip 4 DIn   - SPARE
 //const int _ledDOut4Pin = 12;                  // DOut 4 -> LED strip 4 DIn   - SPARE
 //const int _ledDOut4Pin = 13;                  // DOut 4 -> LED strip 4 DIn   - SPARE
- 
+
 /*----------------------------modes----------------------------*/
 const int _modeNum = 9;
 const int _modePresetSlotNum = 6;
@@ -82,59 +81,33 @@ int _coverageCur = 0;                         // current coverage layer in use.
 String _coverageName[_coverageNum] = {"Full", "HiCut", "LowCut", "HiEdgeCut", "FullEdgeCut", "BackProfile" };
 
 /*-----------------sunrise/set------------------*/
-bool _sunRiseEnabled = false;
-bool _sunSetEnabled = false;
-volatile bool _sunRiseTriggered = false;
-volatile bool _sunSetTriggered = false;
-int _sunRiseStateCur = 0;                     // current sunrise internal state (beginning, rise, end)
-int _sunSetStateCur = 0;                      // current sunset internal state (beginning, fall, end)
+
 
 /*----------------------------buttons----------------------------*/
 
+
 /*----------------------------touch sensors----------------------------*/
-// MPR121 connected via I2C
-Mpr121 mpr121;                                // init MPR121 on I2C
-u16 touch_status_flag[CHANNEL_NUM] = { 0 };   // u16 = unsigned short
+
 
 /*----------------------------HVAC - Inc. Control enclosure and Bookshelves----------------------------*/
-/*-- temperature sensor for the enclosure and shelving --*/
-byte _temperatureEnclosureCur = 1;            // the current temperature in the enclosure
-//byte _temperatureShelvesCur[4][8] = { {1,1,1,1,1,1,0,0}, {1,1,1,1,1,1,1,1}, {1,1,1,1,1,1,1,1}, {1,1,1,1,1,1,1,1} };
-byte _temperatureTopCur = 1;                  // the current temperature on the longest leg at the very top of the bookshelves.
-byte _temperatureEnclosureOn[2] = { 28, 38 };  // temp at which the fans are turned on (temp rising) and temp at which the fans are fully On.
-//const byte _temperatureEnclosureOnMax = 38;   // temp at which the fans are fully On.
-byte _temperatureEnclosureOff[2] = { 24, 20 };   // temp at which the fans start slowing down (turning off, temp falling) and temp at which the fans are fully Off.
-//const byte _temperatureEnclosureOffMin = 20;  // temp at which the fans are fully Off.
-/*-- fans for the enclosure and shelving --*/
-bool _fansEnclosureEnabled = false;        // are the enclosure fans on?
-//boolean _fansShelvesEnabled[4][8] = { {false,false,false,false,false,false,false,false}, {false,false,false,false,false,false,false,false}, {false,false,false,false,false,false,false,false}, {false,false,false,false,false,false,false,false} };                 // are the fans on?
-bool _fansTopEnabled = false;              // is the very top fan on?
-byte _fansEnclosureSpeed = 255;               // the speed at which the enclosure fans run.
-//byte _fansShelvesSpeed[4][8] = {};            // the speed at which the shelf fans run.
-byte _fansTopSpeed = 255;                     // the speed at which the top fan runs.
+
 
 /*----------------------------LED----------------------------*/
-// might limit power draw even further if add usb charge ports to the system
-// or use usb chips and change power draw if usb device attached and charging
-// 39 x 0.02A = 0.78A x 3 = 2.34 x 3 = 7.02
-// 26 x 0.02A = 0.52A x 3 = 1.56
-// 7.02 + 1.56 = 8.58 Amp draw for all current lights on full white. Adjust when adding extra strips
-// control board 500mA
-// esp8266 device 250mA
 #define MAX_POWER_DRAW 8580                   // limit power draw to ...Amp at 5v - going to be a 12A supply. I think 9.6A normal and 12A max draw + any extra lights, pheripherals, fans, sensors, devices.
-typedef struct {
-  byte first;
-  byte last;
-  byte total;
-} LED_SEGMENT;
+#define UPDATES_PER_SECOND 120                // main loop FastLED show delay //100 = FastLED.delay(1000 / UPDATES_PER_SECOND);
 const int _ledNumOfStrips = 4;                // 3x LED strips (39, 39, 39, 26)
 const int _ledNumPerStrip = 40;               // Xm strip with LEDs ( 1 + 39 )
 const int _segmentTotal = 9;                  // total segments (shelves) on each strip ( 1 + 8 )
 const int _ledGlobalBrightness = 255;         // global brightness - use this to cap the brightness
 int _ledGlobalBrightnessCur = 255;            // current global brightness - adjust this one!
 int _ledBrightnessIncDecAmount = 10;          // the brightness amount to increase or decrease
-#define UPDATES_PER_SECOND 120                // main loop FastLED show delay //100 = FastLED.delay(1000 / UPDATES_PER_SECOND);
-LED_SEGMENT ledSegment[_segmentTotal] = { 
+
+typedef struct {
+  byte first;
+  byte last;
+  byte total;
+} LED_SEGMENT;
+LED_SEGMENT _ledSegment[_segmentTotal] = { 
   { 0, 0, 1 },    // blank for level shifting hack and debug status
   { 1, 2, 2 }, 
   { 3, 8, 6 },    // shelves start
@@ -144,61 +117,68 @@ LED_SEGMENT ledSegment[_segmentTotal] = {
   { 25, 29, 5 },  // short end upright ends after 2nd pixel at this level
   { 30, 33, 4 },
   { 34, 39, 6 }
-};
-//LED_SEGMENT ledSegment[_segmentTotal] = { 
-//  { 0, 1, 2 }, 
-//  { 2, 7, 6 },    // shelves start
-//  { 8, 13, 6 },
-//  { 14, 18, 5 },
-//  { 19, 23, 5 },
-//  { 24, 28, 5 },  // short end upright ends after 2nd pixel at this level
-//  { 29, 32, 4 },
-//  { 33, 38, 6 }
-//};
+};       
+CRGB _leds[_ledNumOfStrips][_ledNumPerStrip];  // global RGB array matrix
+                       
+#define TEMPERATURE_0 WarmFluorescent
+#define TEMPERATURE_1 StandardFluorescent
+#define TEMPERATURE_2 CoolWhiteFluorescent
 CHSV startColor( 144, 70, 64 );
 CHSV endColor( 31, 71, 69 );
 CRGB startColor_RGB( 3, 144, 232 );
 CRGB endColor_RGB( 249, 180, 1 );
-uint8_t _gHue = 0; // rotating "base color"
-                                              
-CRGB leds[_ledNumOfStrips][_ledNumPerStrip];  // global RGB array matrix
+uint8_t _gHue = 0;                            // rotating "base color"
 
-#define TEMPERATURE_0 WarmFluorescent
-#define TEMPERATURE_1 StandardFluorescent
-#define TEMPERATURE_2 CoolWhiteFluorescent
+/*---------------------------- WIFI----------------------------*/
+const long _wifiConnectionDelay = 500;
 
-/*----------------------------Mesh----------------------------*/
-painlessMesh  mesh;
-//char mesh_name[] = MESH_NAME;
-//char mesh_password[] = MESH_PASSWORD;
-//uint16_t mesh_port = MESH_PORT;
-String _modeString = "Glow";
-uint32_t id_bridge1 = DEVICE_ID_BRIDGE1;
+/*----------------------------MQTT----------------------------*/
+unsigned long mqttConnectionPreviousMillis = millis();
+const long mqttConnectionInterval = 60000;
 
-void receivedCallback(uint32_t from, String &msg ) {
-  if (DEBUG_COMMS) { Serial.printf("leaningBookshelvesLight1_Mesh: Received from %u msg=%s\n", from, msg.c_str()); }
-  receiveMessage(from, msg);
-}
+char mqtt_server[] = MQTT_BROKER_IP;
+char mqtt_port[] = "1883"; //MQTT_BROKER_PORT;
+//uint16_t mqtt_broker_port = MQTT_BROKER_PORT;
+char workgroup[] = WORKGROUP_NAME;
+char username[] = MQTT_BROKER_USERNAME;
+char password[] = MQTT_BROKER_PASSWORD;
 
-void newConnectionCallback(uint32_t nodeId) {
-  if (runonce == true) {
-    publishStatusAll(false);
-    runonce = false;
-  }
-  if (DEBUG_COMMS) { Serial.printf("--> leaningBookshelvesLight1_Mesh: New Connection, nodeId = %u\n", nodeId); }
-}
+char machineId[32] = "";                      // MD5 of chip ID
+bool shouldSaveConfig = false;                // flag for saving data
 
-void changedConnectionCallback() {
-  if (DEBUG_COMMS) { Serial.printf("Changed connections %s\n",mesh.subConnectionJson().c_str()); }
-}
+// MQTT
+WiFiClient espClient;
+PubSubClient mqttClient(espClient);
+//PubSubClient mqttClient(MQTT_BROKER_IP, MQTT_BROKER_PORT, mqttCallback, espClient);
 
-void nodeTimeAdjustedCallback(int32_t offset) {
-  if (DEBUG_COMMS) { Serial.printf("Adjusted time %u. Offset = %d\n", mesh.getNodeTime(),offset); }
-}
+const uint8_t MSG_BUFFER_SIZE = 50;
+char m_msg_buffer[MSG_BUFFER_SIZE];           // buffer used to send/receive data with MQTT
 
-void delayReceivedCallback(uint32_t from, int32_t delay) {
-  if (DEBUG_COMMS) { Serial.printf("Delay to node %u is %d us\n", from, delay); }
-}
+//broadcast states and subscribe to commands
+const PROGMEM char* MQTT_LIGHTS_TOPIC_STATE = "house/stairs/lights/light/status";
+const PROGMEM char* MQTT_LIGHTS_TOPIC_COMMAND = "house/stairs/lights/light/switch";
+
+const PROGMEM char* MQTT_LIGHTS_BRIGHTNESS_TOPIC_STATE = "house/stairs/lights/brightness/status";
+const PROGMEM char* MQTT_LIGHTS_BRIGHTNESS_TOPIC_COMMAND = "house/stairs/lights/brightness/set";
+
+//const PROGMEM char* MQTT_LIGHTS_HUE_TOPIC_STATE = "house/stairs/lights/hue/status";
+//const PROGMEM char* MQTT_LIGHTS_HUE_TOPIC_COMMAND = "house/stairs/lights/hue/set";
+
+const PROGMEM char* MQTT_LIGHTS_TOP_RGB_TOPIC_STATE = "house/stairs/lights/top/rgb/status";
+const PROGMEM char* MQTT_LIGHTS_TOP_RGB_TOPIC_COMMAND = "house/stairs/lights/top/rgb/set";
+
+const PROGMEM char* MQTT_LIGHTS_BOT_RGB_TOPIC_STATE = "house/stairs/lights/bot/rgb/status";
+const PROGMEM char* MQTT_LIGHTS_BOT_RGB_TOPIC_COMMAND = "house/stairs/lights/bot/rgb/set";
+
+//const PROGMEM char* LIGHTS_ON = "ON";
+//const PROGMEM char* LIGHTS_OFF = "OFF";
+
+const PROGMEM char* MQTT_SENSORS_TOP_TOPIC_STATE = "house/stairs/sensors/top/status";
+const PROGMEM char* MQTT_SENSORS_BOT_TOPIC_STATE = "house/stairs/sensors/bot/status";
+
+const PROGMEM char* MQTT_LIGHTS_MODE = "house/stairs/lights/mode";
+//char* _effect = "Normal";
+String _modeString = "Fade";                  // Normal
 
 
 /*----------------------------MAIN----------------------------*/
@@ -215,53 +195,38 @@ void setup() {
   Serial.println();
 
   delay(3000);                                // Give the power, LED strip, etc. a couple of secs to stabilise
-  setupLEDs();
-  setupUserInputs();                          
-  setupMesh();
+  
+  loadSettings();
+  
+  setupLED();
+    flashLED(1);
+  setupUserInputs(); 
+    flashLED(2); 
+  setupWIFI();
+    flashLED(3);
+  setupMQTT();
+    flashLED(4);
   setupHvac();
+    flashLED(5);
 
   //everything done? ok then..
-  Serial.print(F("Setup done"));
-  Serial.println("-----");
-  Serial.print(F("Device Node ID is "));
-  String s = String(mesh.getNodeId());
-  Serial.println(s);
-  Serial.println("-----");
-  Serial.println("");
+  Serial.print("Setup done");
 }
 
+
 void loop() {
-  
+
   if(_firstTimeSetupDone == false) {
     if (DEBUG_GEN) { }
     _onOff = true;
     _firstTimeSetupDone = true;               // need this for stuff like setting sunrise, cos it needs the time to have been set
   }
 
-  mesh.update();
+  loopMQTT();
   loopUserInputs();
   loopModes();
-  //loopHvac();
-  
-  if (DEBUG_OVERLAY) {
-    checkSegmentEndpoints();
-    showColorTempPx();
-  }
-  
-  EVERY_N_SECONDS(60) {                       // too much ???
-    if (_shouldSaveSettings == true)
-    { 
-      //saveSettings(); 
-      _shouldSaveSettings = false; 
-    }
-  }
-
-  FastLED.show();                             // send all the data to the strips
-  FastLED.delay(1000 / UPDATES_PER_SECOND);
-  //
-  //delay(_mainLoopDelay);  //using FastLED.delay instead..
-
-  if (_modeCur == 8) {
-    EVERY_N_MILLISECONDS( 20 ) { _gHue++; } // slowly cycle the "base color" through the rainbow (for "effect" mode).
-  }
+  loopHvac();
+  loopDebug();
+  loopSaveSettings();
+  loopLED();
 }
