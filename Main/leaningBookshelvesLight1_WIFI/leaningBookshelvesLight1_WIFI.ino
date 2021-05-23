@@ -31,7 +31,7 @@
 
 /*----------------------------system----------------------------*/
 const String _progName = "leaningBookshelvesLight1_WIFI";
-const String _progVers = "0.100";             // WIFI version init
+const String _progVers = "0.101";             // WIFI init 2
 
 bool DEBUG_GEN = false;                       // realtime serial debugging output - general
 bool DEBUG_OVERLAY = false;                   // show debug overlay on leds (eg. show segment endpoints, center, etc.)
@@ -81,16 +81,36 @@ int _coverageCur = 0;                         // current coverage layer in use.
 String _coverageName[_coverageNum] = {"Full", "HiCut", "LowCut", "HiEdgeCut", "FullEdgeCut", "BackProfile" };
 
 /*-----------------sunrise/set------------------*/
-
+bool _sunRiseEnabled = false;
+bool _sunSetEnabled = false;
+volatile bool _sunRiseTriggered = false;
+volatile bool _sunSetTriggered = false;
+int _sunRiseStateCur = 0;                     // current sunrise internal state (beginning, rise, end)
+int _sunSetStateCur = 0;                      // current sunset internal state (beginning, fall, end)
 
 /*----------------------------buttons----------------------------*/
 
 
 /*----------------------------touch sensors----------------------------*/
-
+Mpr121 mpr121;                                // init MPR121 on I2C
+u16 touch_status_flag[CHANNEL_NUM] = { 0 };   // u16 = unsigned short
 
 /*----------------------------HVAC - Inc. Control enclosure and Bookshelves----------------------------*/
-
+/*-- temperature sensor for the enclosure and shelving --*/
+byte _temperatureEnclosureCur = 1;            // the current temperature in the enclosure
+//byte _temperatureShelvesCur[4][8] = { {1,1,1,1,1,1,0,0}, {1,1,1,1,1,1,1,1}, {1,1,1,1,1,1,1,1}, {1,1,1,1,1,1,1,1} };
+byte _temperatureTopCur = 1;                  // the current temperature on the longest leg at the very top of the bookshelves.
+byte _temperatureEnclosureOn[2] = { 28, 38 };  // temp at which the fans are turned on (temp rising) and temp at which the fans are fully On.
+//const byte _temperatureEnclosureOnMax = 38;   // temp at which the fans are fully On.
+byte _temperatureEnclosureOff[2] = { 24, 20 };   // temp at which the fans start slowing down (turning off, temp falling) and temp at which the fans are fully Off.
+//const byte _temperatureEnclosureOffMin = 20;  // temp at which the fans are fully Off.
+/*-- fans for the enclosure and shelving --*/
+bool _fansEnclosureEnabled = false;        // are the enclosure fans on?
+//boolean _fansShelvesEnabled[4][8] = { {false,false,false,false,false,false,false,false}, {false,false,false,false,false,false,false,false}, {false,false,false,false,false,false,false,false}, {false,false,false,false,false,false,false,false} };                 // are the fans on?
+bool _fansTopEnabled = false;              // is the very top fan on?
+byte _fansEnclosureSpeed = 255;               // the speed at which the enclosure fans run.
+//byte _fansShelvesSpeed[4][8] = {};            // the speed at which the shelf fans run.
+byte _fansTopSpeed = 255;                     // the speed at which the top fan runs.
 
 /*----------------------------LED----------------------------*/
 #define MAX_POWER_DRAW 8580                   // limit power draw to ...Amp at 5v - going to be a 12A supply. I think 9.6A normal and 12A max draw + any extra lights, pheripherals, fans, sensors, devices.

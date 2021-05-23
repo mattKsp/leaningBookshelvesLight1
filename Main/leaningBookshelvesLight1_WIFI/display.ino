@@ -50,6 +50,11 @@ void loopLED() {
 
 
 /*----------------------------led helpers----------------------------*/
+
+void coverageMask() {
+  //
+}
+
 /*
  Check Segment Endpoints
  usage | checkSegmentEndpoints();
