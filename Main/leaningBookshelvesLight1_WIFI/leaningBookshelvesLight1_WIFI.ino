@@ -31,7 +31,7 @@
 
 /*----------------------------system----------------------------*/
 const String _progName = "leaningBookshelvesLight1_WIFI";
-const String _progVers = "0.101";             // WIFI init 2
+const String _progVers = "0.102";             // WIFI init 2 fix
 
 bool USE_SERIAL = true;                       // serial output / turned on/off when flashing board
 bool DEBUG_GEN = false;                       // realtime serial debugging output - general

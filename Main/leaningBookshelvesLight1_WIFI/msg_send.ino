@@ -11,11 +11,11 @@ void meshSendSingleToServer(String nom, char* addr, char* msg, bool save) {
 void publishMeshMsgSingleState(String nom, char* addr, boolean state, bool save) {
   char* msg = LIGHTS_OFF;
   if (state == true) { msg = LIGHTS_ON; }
-  snprintf(m_msg_buffer, MSG_BUFFER_SIZE, "%d", msg);
+  snprintf(m_msg_buffer, MSG_BUFFER_SIZE, "%s", msg);
   meshSendSingleToServer(nom, addr, m_msg_buffer, save);
 }
 void publishMeshMsgSingleString(String nom, char* addr, String msg, bool save) {
-  snprintf(m_msg_buffer, MSG_BUFFER_SIZE, "%d", msg);
+  snprintf(m_msg_buffer, MSG_BUFFER_SIZE, "%s", msg);
   meshSendSingleToServer(nom, addr, m_msg_buffer, save);
 }
 void publishMeshMsgSingleColor(String nom, char* addr, uint8_t r, uint8_t g, uint8_t b, bool save) {
