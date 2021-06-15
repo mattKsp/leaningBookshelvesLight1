@@ -41,6 +41,30 @@ void cycleEffect() {
 }
 
 /*
+ * Golbal brightness utils
+ */
+void setGlobalBrightness(int gb) {
+  //use this to achieve an override from the mesh, eg. to match levels
+  _ledGlobalBrightnessCur = gb;
+  brightnessRolloverCatch();
+}
+void increaseBrightness() {
+  _ledGlobalBrightnessCur += _ledBrightnessIncDecAmount;
+  brightnessRolloverCatch();
+}
+void decreaseBrightness() {
+  _ledGlobalBrightnessCur -= _ledBrightnessIncDecAmount;
+  brightnessRolloverCatch();
+}
+void brightnessRolloverCatch() {
+  if(_ledGlobalBrightnessCur > 255) {
+    _ledGlobalBrightnessCur = 255;
+  } else if(_ledGlobalBrightnessCur < 0) {
+    _ledGlobalBrightnessCur = 0;
+  }
+}
+
+/*
  * Color temperature utils
  */
 void setColorTemp(int i) {
@@ -49,6 +73,19 @@ void setColorTemp(int i) {
 void cycleColorTemp() {
   _colorTempCur += 1;
   if (_colorTempCur >= _colorTempNum) { _colorTempCur = 0; }  // rollover
+}
+
+/*
+ * Coverage mask utils
+ */
+void setCoverage(int i) {
+  if (i < 0) { _coverageCur = 0; }
+  else if (i >= _coverageNum) { _coverageCur = _coverageNum - 1; }
+  else { _coverageCur = i; }
+}
+void cycleCoverage() {
+  _coverageCur += 1;
+  if (_coverageCur >= _coverageNum) { _coverageCur = 0; }  // rollover
 }
 
 /*

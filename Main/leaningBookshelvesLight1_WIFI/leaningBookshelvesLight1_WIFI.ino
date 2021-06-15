@@ -33,10 +33,11 @@
 const String _progName = "leaningBookshelvesLight1_WIFI";
 const String _progVers = "0.101";             // WIFI init 2
 
+bool USE_SERIAL = true;                       // serial output / turned on/off when flashing board
 bool DEBUG_GEN = false;                       // realtime serial debugging output - general
 bool DEBUG_OVERLAY = false;                   // show debug overlay on leds (eg. show segment endpoints, center, etc.)
 bool DEBUG_MESHSYNC = false;                  // show painless mesh sync by flashing some leds (no = count of active mesh nodes) 
-bool DEBUG_COMMS = true;                     // realtime serial debugging output - comms
+bool DEBUG_COMMS = false;                     // realtime serial debugging output - comms
 bool DEBUG_USERINPUT = false;                 // realtime serial debugging output - user input
 bool DEBUG_TIME = false;                      // time
 
@@ -153,67 +154,96 @@ uint8_t _gHue = 0;                            // rotating "base color"
 const long _wifiConnectionDelay = 500;
 
 /*----------------------------MQTT----------------------------*/
-unsigned long mqttConnectionPreviousMillis = millis();
-const long mqttConnectionInterval = 60000;
+unsigned long _mqttConnectionPreviousMillis = millis();
+const long _mqttConnectionInterval = 60000;
 
-char mqtt_server[] = MQTT_BROKER_IP;
-char mqtt_port[] = "1883"; //MQTT_BROKER_PORT;
+char _mqtt_server[] = MQTT_BROKER_IP;
+char _mqtt_port[] = "1883"; //MQTT_BROKER_PORT;
 //uint16_t mqtt_broker_port = MQTT_BROKER_PORT;
-char workgroup[] = WORKGROUP_NAME;
-char username[] = MQTT_BROKER_USERNAME;
-char password[] = MQTT_BROKER_PASSWORD;
+char _workgroup[] = WORKGROUP_NAME;
+char _username[] = MQTT_BROKER_USERNAME;
+char _password[] = MQTT_BROKER_PASSWORD;
 
-char machineId[32] = "";                      // MD5 of chip ID
-bool shouldSaveConfig = false;                // flag for saving data
+char _machineId[32] = "";                      // MD5 of chip ID
+bool _shouldSaveConfig = false;                // flag for saving data
 
-// MQTT
 WiFiClient espClient;
-PubSubClient mqttClient(espClient);
 //PubSubClient mqttClient(MQTT_BROKER_IP, MQTT_BROKER_PORT, mqttCallback, espClient);
+PubSubClient mqttClient(espClient);
 
 const uint8_t MSG_BUFFER_SIZE = 50;
 char m_msg_buffer[MSG_BUFFER_SIZE];           // buffer used to send/receive data with MQTT
 
-//broadcast states and subscribe to commands
-const PROGMEM char* MQTT_LIGHTS_TOPIC_STATE = "house/stairs/lights/light/status";
-const PROGMEM char* MQTT_LIGHTS_TOPIC_COMMAND = "house/stairs/lights/light/switch";
+// Broadcast states and subscribe to commands
+// Topics that require feedback to the server use COMMAND "set" and STATE "status".
 
-const PROGMEM char* MQTT_LIGHTS_BRIGHTNESS_TOPIC_STATE = "house/stairs/lights/brightness/status";
-const PROGMEM char* MQTT_LIGHTS_BRIGHTNESS_TOPIC_COMMAND = "house/stairs/lights/brightness/set";
+//   ....needs an RGB for effects.... !!!
 
-//const PROGMEM char* MQTT_LIGHTS_HUE_TOPIC_STATE = "house/stairs/lights/hue/status";
-//const PROGMEM char* MQTT_LIGHTS_HUE_TOPIC_COMMAND = "house/stairs/lights/hue/set";
+const PROGMEM char* MQTT_LIGHTS_TOPIC_COMMAND = "house/leaningbookshelves1/lights/light/switch"; // receive switch
+PROGMEM char* MQTT_LIGHTS_TOPIC_STATE = "house/leaningbookshelves1/lights/light/status";   // send status
 
-const PROGMEM char* MQTT_LIGHTS_TOP_RGB_TOPIC_STATE = "house/stairs/lights/top/rgb/status";
-const PROGMEM char* MQTT_LIGHTS_TOP_RGB_TOPIC_COMMAND = "house/stairs/lights/top/rgb/set";
+const PROGMEM char* MQTT_LIGHTS_BRIGHTNESS_TOPIC_COMMAND = "house/leaningbookshelves1/lights/brightness/set";  // receive set
+PROGMEM char* MQTT_LIGHTS_BRIGHTNESS_TOPIC_STATE = "house/leaningbookshelves1/lights/brightness/status"; // send status
 
-const PROGMEM char* MQTT_LIGHTS_BOT_RGB_TOPIC_STATE = "house/stairs/lights/bot/rgb/status";
-const PROGMEM char* MQTT_LIGHTS_BOT_RGB_TOPIC_COMMAND = "house/stairs/lights/bot/rgb/set";
+const PROGMEM char* MQTT_LIGHTS_MODE_TOPIC_COMMAND = "house/leaningbookshelves1/lights/mode/set";
+PROGMEM char* MQTT_LIGHTS_MODE_TOPIC_STATE = "house/leaningbookshelves1/lights/mode/status";
 
-//const PROGMEM char* LIGHTS_ON = "ON";
-//const PROGMEM char* LIGHTS_OFF = "OFF";
+const PROGMEM char* MQTT_LIGHTS_MODE_COLTEMP_TOPIC_COMMAND = "house/leaningbookshelves1/lights/mode/coltemp/set";
+PROGMEM char* MQTT_LIGHTS_MODE_COLTEMP_TOPIC_STATE = "house/leaningbookshelves1/lights/mode/coltemp/status";
 
-const PROGMEM char* MQTT_SENSORS_TOP_TOPIC_STATE = "house/stairs/sensors/top/status";
-const PROGMEM char* MQTT_SENSORS_BOT_TOPIC_STATE = "house/stairs/sensors/bot/status";
+const PROGMEM char* MQTT_LIGHTS_MODE_EFFECT_TOPIC_COMMAND = "house/leaningbookshelves1/lights/mode/effect/set";
+PROGMEM char* MQTT_LIGHTS_MODE_EFFECT_TOPIC_STATE = "house/leaningbookshelves1/lights/mode/effect/status";
 
-const PROGMEM char* MQTT_LIGHTS_MODE = "house/stairs/lights/mode";
+const PROGMEM char* MQTT_LIGHTS_MODE_COVERAGE_TOPIC_COMMAND = "house/leaningbookshelves1/lights/mode/coverage/set";
+PROGMEM char* MQTT_LIGHTS_MODE_COVERAGE_TOPIC_STATE = "house/leaningbookshelves1/lights/mode/coverage/status";
+
+const PROGMEM char* MQTT_LIGHTS_SUNRISE_TOPIC_COMMAND = "house/leaningbookshelves1/lights/sunrise";
+const PROGMEM char* MQTT_SUNRISE_GLOBAL_TOPIC_COMMAND = "house/sunrise";
+
+const PROGMEM char* MQTT_LIGHTS_SUNSET_TOPIC_COMMAND = "house/leaningbookshelves1/lights/sunset";
+const PROGMEM char* MQTT_SUNSET_GLOBAL_TOPIC_COMMAND = "house/sunset";
+
+const PROGMEM char* MQTT_LIGHTS_BREATH_TOPIC_COMMAND = "house/leaningbookshelves1/lights/breath";
+const PROGMEM char* MQTT_BREATH_GLOBAL_TOPIC_COMMAND = "house/breath";
+const PROGMEM char* MQTT_LIGHTS_BREATH_XYZ_TOPIC_COMMAND = "house/leaningbookshelves1/lights/breath/xyz"; 
+const PROGMEM char* MQTT_LIGHTS_BREATH_XYZ_MODE_TOPIC_COMMAND = "house/leaningbookshelves1/lights/breath/xyz/mode";
+
+const PROGMEM char* MQTT_DEBUG_GENERAL_TOPIC_COMMAND = "house/leaningbookshelves1/debug/general/set";
+PROGMEM char* MQTT_DEBUG_GENERAL_TOPIC_STATE = "house/leaningbookshelves1/debug/general/status";
+
+const PROGMEM char* MQTT_DEBUG_OVERLAY_TOPIC_COMMAND = "house/leaningbookshelves1/debug/overlay/set";
+PROGMEM char* MQTT_DEBUG_OVERLAY_TOPIC_STATE = "house/leaningbookshelves1/debug/overlay/status";
+
+const PROGMEM char* MQTT_DEBUG_COMMS_TOPIC_COMMAND = "house/leaningbookshelves1/debug/comms/set";
+PROGMEM char* MQTT_DEBUG_COMMS_TOPIC_STATE = "house/leaningbookshelves1/debug/comms/status";
+
+const PROGMEM char* MQTT_DEBUG_RESET_TOPIC_COMMAND = "house/leaningbookshelves1/debug/reset";
+const PROGMEM char* MQTT_DEBUG_RESTART_TOPIC_COMMAND = "house/leaningbookshelves1/debug/restart";
+
+const PROGMEM char* MQTT_RESET_GLOBAL_TOPIC_COMMAND = "house/reset";
+const PROGMEM char* MQTT_RESTART_GLOBAL_TOPIC_COMMAND = "house/restart";
+const PROGMEM char* MQTT_LOCKDOWN_GLOBAL_TOPIC_COMMAND = "house/lockdown";
+const PROGMEM char* MQTT_STATUS_REQUEST_TOPIC_COMMAND = "house/leaningbookshelves1/status/request";
+
 //char* _effect = "Normal";
 String _modeString = "Fade";                  // Normal
 
 
 /*----------------------------MAIN----------------------------*/
 void setup() {
-  
-  Serial.begin(115200);
-  
-  Serial.println();
-  Serial.print(_progName);
-  Serial.print(" v");
-  Serial.print(_progVers);
-  Serial.println();
-  Serial.print("..");
-  Serial.println();
 
+  if (USE_SERIAL) {
+    Serial.begin(115200);
+    
+    Serial.println();
+    Serial.print(_progName);
+    Serial.print(" v");
+    Serial.print(_progVers);
+    Serial.println();
+    Serial.print("..");
+    Serial.println();
+  }
+  
   delay(3000);                                // Give the power, LED strip, etc. a couple of secs to stabilise
   
   loadSettings();
@@ -230,7 +260,7 @@ void setup() {
     flashLED(5);
 
   //everything done? ok then..
-  Serial.print("Setup done");
+  if (USE_SERIAL) { Serial.print("Setup done"); }
 }
 
 
