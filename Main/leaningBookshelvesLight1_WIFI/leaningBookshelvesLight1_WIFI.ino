@@ -31,7 +31,7 @@
 
 /*----------------------------system----------------------------*/
 const String _progName = "leaningBookshelvesLight1_WIFI";
-const String _progVers = "0.102";             // WIFI init 2 fix
+const String _progVers = "0.103";             // WIFI init 3
 
 bool USE_SERIAL = true;                       // serial output / turned on/off when flashing board
 bool DEBUG_GEN = false;                       // realtime serial debugging output - general
@@ -269,6 +269,7 @@ void loop() {
   if(_firstTimeSetupDone == false) {
     if (DEBUG_GEN) { }
     _onOff = true;
+    publishStatusAll(true);
     _firstTimeSetupDone = true;               // need this for stuff like setting sunrise, cos it needs the time to have been set
   }
 
