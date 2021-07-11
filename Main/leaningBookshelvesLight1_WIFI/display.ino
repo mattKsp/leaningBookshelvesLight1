@@ -9,8 +9,7 @@ void setupLED() {
   FastLED.addLeds<WS2812B, _ledDOut3Pin, GRB>(_leds[3], _ledNumPerStrip).setCorrection( TypicalSMD5050 );
   // further addition of strips will be seperate ontrols
 
-  _ledGlobalBrightnessCur = _ledGlobalBrightness;
-  FastLED.setBrightness(_ledGlobalBrightness);      //set global brightness
+  FastLED.setBrightness(_ledGlobalBrightnessCur);      //set global brightness
   FastLED.setTemperature(UncorrectedTemperature);   //set first temperature
 }
 
@@ -51,8 +50,61 @@ void loopLED() {
 
 /*----------------------------led helpers----------------------------*/
 
+/*
+ * Golbal brightness utils
+ */
+void setGlobalBrightness(int gb) {
+  //use this to achieve an override from the mesh, eg. to match levels
+  _ledGlobalBrightnessCur = gb;
+  brightnessRolloverCatch();
+}
+void increaseBrightness() {
+  _ledGlobalBrightnessCur += _ledBrightnessIncDecAmount;
+  brightnessRolloverCatch();
+}
+void decreaseBrightness() {
+  _ledGlobalBrightnessCur -= _ledBrightnessIncDecAmount;
+  brightnessRolloverCatch();
+}
+void brightnessRolloverCatch() {
+  if(_ledGlobalBrightnessCur > 255) {
+    _ledGlobalBrightnessCur = 255;
+  } else if(_ledGlobalBrightnessCur < 0) {
+    _ledGlobalBrightnessCur = 0;
+  }
+  FastLED.setBrightness(_ledGlobalBrightnessCur);
+}
+
+/*
+ * Color temperature utils
+ */
+void setColorTemp(int i) {
+  _colorTempCur = i;
+}
+void cycleColorTemp() {
+  _colorTempCur += 1;
+  if (_colorTempCur >= _colorTempNum) { _colorTempCur = 0; }  // rollover
+}
+
+void setColorFx(CRGB rgb) {
+  effectColor_RGB = rgb;
+  
+  if (DEBUG_GEN) { 
+    Serial.print("setColorFx - R ");
+    Serial.print(rgb.red);
+    Serial.print(", G ");
+    Serial.print(rgb.green);
+    Serial.print(", B ");
+    Serial.println(rgb.blue);
+  }
+}
+
 void coverageMask() {
   //
+}
+
+void setTopLed(uint8_t tl) {
+  _topLed = map8(tl, _ledSegment[1].first, _ledSegment[_segmentTotal-1].last);
 }
 
 /*

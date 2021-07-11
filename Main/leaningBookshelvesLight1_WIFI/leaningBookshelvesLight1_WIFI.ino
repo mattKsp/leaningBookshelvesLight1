@@ -21,8 +21,8 @@
 // Wemos D32 Pro (ESP32-WROVER)
 
 /*----------------------------libraries----------------------------*/
-#include <MT_LightControlDefines.h>
-#include <FS.h>                               // a few saved settings
+#include <MT_LightControlDefines.h>      
+#include <Preferences.h>                      // a few saved settings
 #include <WiFi.h>                             // 
 #include <ArduinoJson.h>                      // https://github.com/bblanchon/ArduinoJson
 #include <PubSubClient.h>                     // https://github.com/knolleary/pubsubclient
@@ -31,7 +31,7 @@
 
 /*----------------------------system----------------------------*/
 const String _progName = "leaningBookshelvesLight1_WIFI";
-const String _progVers = "0.103";             // WIFI init 3
+const String _progVers = "0.104";             // preferences and msgs
 
 bool USE_SERIAL = true;                       // serial output / turned on/off when flashing board
 bool DEBUG_GEN = false;                       // realtime serial debugging output - general
@@ -41,14 +41,16 @@ bool DEBUG_COMMS = false;                     // realtime serial debugging outpu
 bool DEBUG_USERINPUT = false;                 // realtime serial debugging output - user input
 bool DEBUG_TIME = false;                      // time
 
-bool _firstTimeSetupDone = false;             // starts false //this is mainly to catch an interrupt trigger (which isn't used anymore..) that happens during setup, but is usefull for other things
+bool _firstTimeSetupDone = false;             // starts false
 bool _onOff = false;                          // this should init false, then get activated by input - on/off true/false
 bool _shouldSaveSettings = false;             // flag for saving data
-bool _runonce = true;                         // flag for sending states when first mesh conection
 
 bool _isBreathing = false;                    // toggle for breath
 bool _isBreathOverlaid = false;               // toggle for whether breath is overlaid on top of modes
 bool _isBreathingSynced = false;              // breath sync local or global
+
+/*----------------------------memory----------------------------*/
+Preferences preferences;
 
 /*----------------------------pins----------------------------*/
 const int _ledDOut0Pin = 4;                   // DOut 0 -> LED strip 0 DIn   - right 2 (short)
@@ -74,11 +76,11 @@ int _colorTempCur = 1;                        // current colour temperature
 String _colorTempName[_colorTempNum] = { "Warm", "Standard", "CoolWhite" }; // color temperature sub-mode names for the main "Working" mode.
 
 const int _effectNum = 6;
-int _effectCur = 0;
+int _effectCur = 3;
 String _effectName[_effectNum] = { "Fire2012", "Confetti", "AddGlitter", "Rainbow", "RainbowWithGlitter", "Rain" };
 
 const int _coverageNum = 6;                   // 6 for now. LED coverage mask for whole structure.
-int _coverageCur = 0;                         // current coverage layer in use.
+int _coverageCur = 4;                         // current coverage layer in use.
 String _coverageName[_coverageNum] = {"Full", "HiCut", "LowCut", "HiEdgeCut", "FullEdgeCut", "BackProfile" };
 
 /*-----------------sunrise/set------------------*/
@@ -140,6 +142,7 @@ LED_SEGMENT _ledSegment[_segmentTotal] = {
   { 34, 39, 6 }
 };       
 CRGB _leds[_ledNumOfStrips][_ledNumPerStrip];  // global RGB array matrix
+uint8_t _topLed = _ledSegment[_segmentTotal-1].last;  // used to cap the top of the strip
                        
 #define TEMPERATURE_0 WarmFluorescent
 #define TEMPERATURE_1 StandardFluorescent
@@ -148,6 +151,7 @@ CHSV startColor( 144, 70, 64 );
 CHSV endColor( 31, 71, 69 );
 CRGB startColor_RGB( 3, 144, 232 );
 CRGB endColor_RGB( 249, 180, 1 );
+CRGB effectColor_RGB( 255, 255, 255);         // set by main RGB messages
 uint8_t _gHue = 0;                            // rotating "base color"
 
 /*---------------------------- WIFI----------------------------*/
@@ -177,13 +181,19 @@ char m_msg_buffer[MSG_BUFFER_SIZE];           // buffer used to send/receive dat
 // Broadcast states and subscribe to commands
 // Topics that require feedback to the server use COMMAND "set" and STATE "status".
 
-//   ....needs an RGB for effects.... !!!
+//   ....needs an RGB for effects.... - using main RGB !!!
 
 const PROGMEM char* MQTT_LIGHTS_TOPIC_COMMAND = "house/leaningbookshelves1/lights/light/switch"; // receive switch
 PROGMEM char* MQTT_LIGHTS_TOPIC_STATE = "house/leaningbookshelves1/lights/light/status";   // send status
 
 const PROGMEM char* MQTT_LIGHTS_BRIGHTNESS_TOPIC_COMMAND = "house/leaningbookshelves1/lights/brightness/set";  // receive set
 PROGMEM char* MQTT_LIGHTS_BRIGHTNESS_TOPIC_STATE = "house/leaningbookshelves1/lights/brightness/status"; // send status
+
+const PROGMEM char* MQTT_LIGHTS_GLOBALBRIGHTNESS_TOPIC_COMMAND = "house/leaningbookshelves1/lights/globalbrightness/set";  // receive set
+PROGMEM char* MQTT_LIGHTS_GLOBALBRIGHTNESS_TOPIC_STATE = "house/leaningbookshelves1/lights/globalbrightness/status"; // send status
+
+const PROGMEM char* MQTT_LIGHTS_RGB_TOPIC_COMMAND = "house/leaningbookshelves1/lights/rgb/set";  // receive set
+PROGMEM char* MQTT_LIGHTS_RGB_TOPIC_STATE = "house/leaningbookshelves1/lights/rgb/status"; // send status
 
 const PROGMEM char* MQTT_LIGHTS_MODE_TOPIC_COMMAND = "house/leaningbookshelves1/lights/mode/set";
 PROGMEM char* MQTT_LIGHTS_MODE_TOPIC_STATE = "house/leaningbookshelves1/lights/mode/status";
@@ -196,6 +206,9 @@ PROGMEM char* MQTT_LIGHTS_MODE_EFFECT_TOPIC_STATE = "house/leaningbookshelves1/l
 
 const PROGMEM char* MQTT_LIGHTS_MODE_COVERAGE_TOPIC_COMMAND = "house/leaningbookshelves1/lights/mode/coverage/set";
 PROGMEM char* MQTT_LIGHTS_MODE_COVERAGE_TOPIC_STATE = "house/leaningbookshelves1/lights/mode/coverage/status";
+
+const PROGMEM char* MQTT_LIGHTS_TOPLED_TOPIC_COMMAND = "house/leaningbookshelves1/lights/topled/set";
+PROGMEM char* MQTT_LIGHTS_TOPLED_TOPIC_STATE = "house/leaningbookshelves1/lights/topled/status";
 
 const PROGMEM char* MQTT_LIGHTS_SUNRISE_TOPIC_COMMAND = "house/leaningbookshelves1/lights/sunrise";
 const PROGMEM char* MQTT_SUNRISE_GLOBAL_TOPIC_COMMAND = "house/sunrise";

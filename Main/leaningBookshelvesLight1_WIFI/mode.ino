@@ -52,8 +52,10 @@ void mode0() {
   //name should be glow!
   //bot fade up
   for(int i = 0; i < _ledNumOfStrips; i++) {
-    //fill_gradient_RGB(leds[i], _ledSegment[0].first, CRGB(32, 32, 32), ledSegment[_segmentTotal-1].last, CRGB::Black );
-    fill_gradient_RGB(_leds[i], _ledSegment[1].first, CRGB(32, 32, 32), _ledSegment[_segmentTotal-1].last, CRGB::Black );
+    //fill_gradient_RGB(_leds[i], _ledSegment[1].first, CRGB(32, 32, 32), _ledSegment[_segmentTotal-1].last, CRGB::Black );
+    fadeToBlackBy( _leds[i], _ledNumPerStrip, 30); 
+    fill_gradient_RGB(_leds[i], _ledSegment[1].first, CRGB(32, 32, 32), _topLed, CRGB::Black );
+    //_leds[i][0] = CRGB::Black;                                     // hack
   }
 }
 
@@ -63,8 +65,10 @@ void mode2() {
   //name is morning!
   for(int i = 0; i < _ledNumOfStrips; i++) {
     //fill_solid( leds[i], _ledNumPerStrip, CRGB(0, 0, 255));
-    //fill_gradient_RGB(leds[i], _ledSegment[0].first, CRGB::Yellow, _ledSegment[_segmentTotal-1].last, CRGB::Blue );
-    fill_gradient_RGB(_leds[i], _ledSegment[1].first, CRGB::Yellow, _ledSegment[_segmentTotal-1].last, CRGB::Blue );
+    //fill_gradient_RGB(_leds[i], _ledSegment[1].first, CRGB::Yellow, _ledSegment[_segmentTotal-1].last, CRGB::Blue );  
+    fadeToBlackBy( _leds[i], _ledNumPerStrip, 30);     
+    fill_gradient_RGB(_leds[i], _ledSegment[1].first, CRGB::Yellow, _topLed, CRGB::Blue );
+    //_leds[i][0] = CRGB::Black;                                     // hack
   }
 }
 
@@ -72,9 +76,10 @@ void mode3() {
   //name is day!
   for(int i = 0; i < _ledNumOfStrips; i++) {
     //fill_solid( leds[i], _ledNumPerStrip, CRGB(255, 255, 0));
-    //fill_gradient_RGB(leds[i], _ledSegment[0].first, CRGB::Green, _ledSegment[_segmentTotal/2].first, CRGB::Blue, _ledSegment[_segmentTotal-1].last, CRGB::Yellow );
-    //fill_gradient_RGB(leds[i], _ledSegment[0].first, CRGB::Green, _ledSegment[_segmentTotal-1].last, CRGB::Yellow );
-    fill_gradient_RGB(_leds[i], _ledSegment[1].first, CRGB::Green, _ledSegment[_segmentTotal-1].last, CRGB::Yellow );
+    //fill_gradient_RGB(_leds[i], _ledSegment[1].first, CRGB::Green, _ledSegment[_segmentTotal-1].last, CRGB::Yellow );
+    fadeToBlackBy( _leds[i], _ledNumPerStrip, 30); 
+    fill_gradient_RGB(_leds[i], _ledSegment[1].first, CRGB::Green, _topLed, CRGB::Yellow );
+    //_leds[i][0] = CRGB::Black;                                     // hack
   }
 }
 
@@ -83,8 +88,10 @@ void mode4() {
   //full-bright
   //isStatic should be true
   for(int i = 0; i < _ledNumOfStrips; i++) {
-    fill_solid( _leds[i], _ledNumPerStrip, CRGB::White);     // ???
-    _leds[i][0] = CRGB::Black;                                     // hack
+    //fill_solid( _leds[i], _ledNumPerStrip, CRGB::White);     // ??? _topLed
+    fadeToBlackBy( _leds[i], _ledNumPerStrip, 30); 
+    fill_gradient_RGB(_leds[i], _ledSegment[1].first, CRGB::White, _topLed, CRGB::White );
+    //_leds[i][0] = CRGB::Black;                                     // hack
   }
   
 //add sub temperature modes later..
@@ -109,8 +116,10 @@ void mode4() {
 void mode5() {
   //name is evening!
   for(int i = 0; i < _ledNumOfStrips; i++) {
-    fill_solid( _leds[i], _ledNumPerStrip, CRGB(128, 64, 64));
-    _leds[i][0] = CRGB::Black;                                     // hack
+    //fill_solid( _leds[i], _ledNumPerStrip, CRGB(128, 64, 64));
+    fadeToBlackBy( _leds[i], _ledNumPerStrip, 30); 
+    fill_gradient_RGB(_leds[i], _ledSegment[1].first, CRGB(128, 64, 64), _topLed, CRGB(128, 64, 64));
+    //_leds[i][0] = CRGB::Black;                                     // hack
   }
 }
 
@@ -120,8 +129,10 @@ void mode7() {
   //name is night!
   //top fade down
   for(int i = 0; i < _ledNumOfStrips; i++) {
-    //fill_gradient_RGB(leds[i], _ledSegment[_segmentTotal-1].last, CRGB::White, _ledSegment[0].first, CRGB::Black );
-    fill_gradient_RGB(_leds[i], _ledSegment[_segmentTotal-1].last, CRGB::White, _ledSegment[1].first, CRGB::Black );
+    //fill_gradient_RGB(leds[i], _ledSegment[_segmentTotal-1].last, CRGB::White, _ledSegment[1].first, CRGB::Black );
+    fadeToBlackBy( _leds[i], _ledNumPerStrip, 30); 
+    fill_gradient_RGB(_leds[i], _topLed, CRGB::White, _ledSegment[1].first, CRGB::Black );
+    //_leds[i][0] = CRGB::Black;                                     // hack
   }
 }
 
@@ -136,12 +147,14 @@ void mode8() {
   } else if (_effectCur == 1) {
     confetti();
   } else if (_effectCur == 2) {
-    addGlitter(80);
+    glitter(80);
   } else if (_effectCur == 3) {
     rainbow();
   } else if (_effectCur == 4) {
     rainbowWithGlitter();
   } else if (_effectCur == 5) {
     rain();
+  } else if (_effectCur == 6) {
+    solid();
   }
 }

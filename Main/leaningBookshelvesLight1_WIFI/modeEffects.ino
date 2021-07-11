@@ -41,40 +41,47 @@
 
 void fire2012()
 {
-// Array of temperature readings at each simulation cell
-  static byte heat[_ledNumPerStrip-1];
+  // Array of temperature readings at each simulation cell
+  //static byte heat[_ledNumPerStrip-1];
+  byte heat[_topLed];
 
   // Step 1.  Cool down every cell a little
-    for( int i = _ledSegment[1].first; i < (_ledNumPerStrip-1); i++) {
-      heat[i] = qsub8( heat[i],  random8(0, ((COOLING * 10) / (_ledNumPerStrip-1)) + 2));
-    }
-  
-    // Step 2.  Heat from each cell drifts 'up' and diffuses a little
-    for( int k = (_ledNumPerStrip - 1); k >= 2; k--) {
-      heat[k] = (heat[k - 1] + heat[k - 2] + heat[k - 2] ) / 3;
-    }
-    
-    // Step 3.  Randomly ignite new 'sparks' of heat near the bottom
-    if( random8() < SPARKING ) {
-      int y = random8(7);
-      heat[y] = qadd8( heat[y], random8(160,255) );
-    }
+  //for( int i = _ledSegment[1].first; i < (_ledNumPerStrip-1); i++) {
+  for( int i = _ledSegment[1].first; i < (_topLed); i++) {
+    //heat[i] = qsub8( heat[i],  random8(0, ((COOLING * 10) / (_ledNumPerStrip-1)) + 2));
+    heat[i] = qsub8( heat[i],  random8(0, ((COOLING * 10) / (_topLed)) + 2));
+  }
 
-    // Step 4.  Map from heat cells to LED colors
-    for(int i = 0; i < _ledNumOfStrips; i++) {
-      for( int j = _ledSegment[1].first; j < (_ledNumPerStrip-1); j++) {
-        CRGB color = HeatColor( heat[j]);
-        //int pixelnumber;
-        //bool gReverseDirection = false;
-        //if( gReverseDirection ) {
-        //  pixelnumber = (_ledNumPerStrip-1) - j;
-        //} else {
-        //  pixelnumber = j;
-        //}
-        //_leds[pixelnumber] = color;
-        _leds[i][j] = color;
-      }
+  // Step 2.  Heat from each cell drifts 'up' and diffuses a little
+  //for( int k = (_ledNumPerStrip - 1); k >= 2; k--) {
+  for( int k = (_topLed); k >= 2; k--) {
+    heat[k] = (heat[k - 1] + heat[k - 2] + heat[k - 2] ) / 3;
+  }
+  
+  // Step 3.  Randomly ignite new 'sparks' of heat near the bottom
+  if( random8() < SPARKING ) {
+    int y = random8(7);
+    heat[y] = qadd8( heat[y], random8(160,255) );
+  }
+
+  // Step 4.  Map from heat cells to LED colors
+  for(int i = 0; i < _ledNumOfStrips; i++) { 
+    //for( int j = _ledSegment[1].first; j < (_ledNumPerStrip-1); j++) {
+    for( int j = _ledSegment[1].first; j < (_topLed); j++) {
+      CRGB color = HeatColor( heat[j]);
+      //int pixelnumber;
+      //bool gReverseDirection = false;
+      //if( gReverseDirection ) {
+      //  pixelnumber = (_ledNumPerStrip-1) - j;
+      //} else {
+      //  pixelnumber = j;
+      //}
+      //_leds[pixelnumber] = color;
+      _leds[i][j] = color;
     }
+    fill_gradient_RGB(_leds[i], _topLed+1, CRGB::Black, _ledSegment[_segmentTotal-1].last+1, CRGB::Black );
+    _leds[i][0] = CRGB::Black;                                     // hack
+  }
 }
 
 /*--------FastLED "100-lines-of-code" demo reel--------*/
@@ -93,19 +100,37 @@ void confetti()
   // random colored speckles that blink in and fade smoothly
   for (int i = 0; i < _ledNumOfStrips; i++) {
     fadeToBlackBy(_leds[i], _ledNumPerStrip, 10);
-    int pos = random16(_ledNumPerStrip);
+    //int pos = random16(_ledNumPerStrip);
+    int pos = random16(_topLed+1);
     _leds[i][pos] += CHSV( _gHue + random8(64), 200, 255);
     _leds[i][0] = CRGB::Black;                                     // hack
   }
 }
 
 /*--------"100-lines-of-code" - addGlitter(80)--------*/
-void addGlitter( fract8 chanceOfGlitter) 
+// this doesn't work as is overlaying !!! - nice tho...  -- sorted now !!!
+void glitter(fract8 chanceOfGlitter) 
+{
+  for (int i = 0; i < _ledNumOfStrips; i++) {
+    // make everything black
+    fadeToBlackBy( _leds[i], _ledNumPerStrip, 30); 
+    // then add glitter
+    if( random8() < chanceOfGlitter) {
+      //_leds[i][ random16(_ledNumPerStrip) ] += CRGB::White;
+      _leds[i][ random16(_topLed+1) ] += CRGB::White;
+    }
+    fill_gradient_RGB(_leds[i], _topLed+1, CRGB::Black, _ledSegment[_segmentTotal-1].last+1, CRGB::Black );
+    _leds[i][0] = CRGB::Black;                                     // hack
+  }
+}
+void addGlitter(fract8 chanceOfGlitter) 
 {
   for (int i = 0; i < _ledNumOfStrips; i++) {
     if( random8() < chanceOfGlitter) {
-      _leds[i][ random16(_ledNumPerStrip) ] += CRGB::White;
+      //_leds[i][ random16(_ledNumPerStrip) ] += CRGB::White;
+      _leds[i][ random16(_topLed+1) ] += CRGB::White;
     }
+    fill_gradient_RGB(_leds[i], _topLed+1, CRGB::Black, _ledSegment[_segmentTotal-1].last+1, CRGB::Black );
     _leds[i][0] = CRGB::Black;                                     // hack
   }
 }
@@ -115,8 +140,10 @@ void rainbow()
 {
   // FastLED's built-in rainbow generator
   for (int i = 0; i < _ledNumOfStrips; i++) {
-    fill_rainbow( _leds[i], _ledNumPerStrip, _gHue, 7);
-    //leds[i][0] = CRGB::Black;                                     // hack
+    fadeToBlackBy( _leds[i], _ledNumPerStrip, 30);
+    //fill_rainbow( _leds[i], _ledNumPerStrip, _gHue, 7);
+    fill_rainbow( _leds[i], _topLed_1, _gHue, 7);
+    _leds[i][0] = CRGB::Black;                                     // hack
   }
 }
 
@@ -129,9 +156,21 @@ void rainbowWithGlitter()
 }
 
 /*--------rain--------*/
+// falling from top
 void rain()
 {
   //
+}
+
+/*--------solid--------*/
+void solid()
+{
+  for (int i = 0; i < _ledNumOfStrips; i++) {
+    //fill_solid( _leds[i], _ledNumPerStrip, effectColor_RGB);
+    fadeToBlackBy( _leds[i], _ledNumPerStrip, 30);
+    fill_gradient_RGB(_leds[i], _ledSegment[1].first, effectColor_RGB, _topLed, effectColor_RGB);
+    //_leds[i][0] = CRGB::Black;                                     // hack
+  }
 }
 
 /*--------_--------*/

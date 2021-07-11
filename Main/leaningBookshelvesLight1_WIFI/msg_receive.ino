@@ -10,11 +10,14 @@ void receiveMessage(char* p_topic, byte* p_payload, unsigned int p_length) {
   
   // handle message topics
   if (String(MQTT_LIGHTS_TOPIC_COMMAND).equals(p_topic)) { receivedSwitch(payload); } 
-  if (String(MQTT_LIGHTS_BRIGHTNESS_TOPIC_COMMAND).equals(p_topic)) { receivedBrightness(payload); } 
+  //if (String(MQTT_LIGHTS_BRIGHTNESS_TOPIC_COMMAND).equals(p_topic)) { receivedBrightness(payload); } 
+  if (String(MQTT_LIGHTS_GLOBALBRIGHTNESS_TOPIC_COMMAND).equals(p_topic)) { receivedGlobalBrightness(payload); } 
+  if (String(MQTT_LIGHTS_RGB_TOPIC_COMMAND).equals(p_topic)) { receivedRGB(payload); }
   if (String(MQTT_LIGHTS_MODE_TOPIC_COMMAND).equals(p_topic)) { receivedMode(payload); } 
   if (String(MQTT_LIGHTS_MODE_COLTEMP_TOPIC_COMMAND).equals(p_topic)) { receivedModeColtemp(payload); }  
   if (String(MQTT_LIGHTS_MODE_EFFECT_TOPIC_COMMAND).equals(p_topic)) { receivedModeEffect(payload); }  
-  if (String(MQTT_LIGHTS_MODE_COVERAGE_TOPIC_COMMAND).equals(p_topic)) { receivedModeCoverage(payload); }  
+  if (String(MQTT_LIGHTS_MODE_COVERAGE_TOPIC_COMMAND).equals(p_topic)) { receivedModeCoverage(payload); } 
+  if (String(MQTT_LIGHTS_TOPLED_TOPIC_COMMAND).equals(p_topic)) { receivedTopLed(payload); }  
   
   if (String(MQTT_LIGHTS_SUNRISE_TOPIC_COMMAND).equals(p_topic)) { receivedSunrise(payload); }  
   if (String(MQTT_SUNRISE_GLOBAL_TOPIC_COMMAND).equals(p_topic)) { receivedSunriseGlobal(payload); } 
@@ -47,13 +50,49 @@ void receivedSwitch(String payload) {
   publishState(true);
 }
 
-void receivedBrightness(String payload) {
+// this should be a global brightness instead off the MQTT built-in brightness command in home assistant !!!
+/* void receivedBrightness(String payload) {
   uint8_t brightness = payload.toInt();
-  if (brightness < 0 || brightness > 255) { /* do nothing */ return; } 
-  else {
+  if (brightness < 0 || brightness > 255) { 
+    if (USE_SERIAL && DEBUG_COMMS) { Serial.println("Received brightness out of range"); } 
+    return; 
+  } else {
     setGlobalBrightness(brightness);
     publishBrightness(true);
   }
+} */
+void receivedGlobalBrightness(String payload) {
+  uint8_t brightness = payload.toInt();
+  if (brightness < 0 || brightness > 255) { 
+    if (USE_SERIAL && DEBUG_COMMS) { Serial.println("Received global brightness out of range"); } 
+    return; 
+  } else {
+    setGlobalBrightness(brightness);
+    publishGlobalBrightness(true);
+  }
+}
+
+void receivedRGB(String payload) {
+  CRGB tempRGB;
+  
+  // get the position of the first and second commas
+  uint8_t firstIndex = msgSub.indexOf(',');
+  uint8_t lastIndex = msgSub.lastIndexOf(',');
+  
+  uint8_t rgb_red = msgSub.substring(0, firstIndex).toInt();
+  if (rgb_red < 0 || rgb_red > 255) { /* do nothing */ return; } 
+  else { tempRGB.red = rgb_red; }
+  
+  uint8_t rgb_green = msgSub.substring(firstIndex + 1, lastIndex).toInt();
+  if (rgb_green < 0 || rgb_green > 255) { /* do nothing */ return; } 
+  else { tempRGB.green = rgb_green; }
+  
+  uint8_t rgb_blue = msgSub.substring(lastIndex + 1).toInt();
+  if (rgb_blue < 0 || rgb_blue > 255) { /* do nothing */ return; } 
+  else { tempRGB.blue = rgb_blue; }
+
+  setColorFx(tempRGB);
+  publishRGB(true);
 }
 
 void receivedMode(String payload) {
@@ -85,9 +124,11 @@ void receivedModeEffect(String payload) {
   /* String _effectName[_effectNum] = { "Fire2012", "Confetti", "AddGlitter", "Rainbow", "RainbowWithGlitter", "Rain" }; */
   if      (payload == "Fire2012")           { setEffect(0); }
   else if (payload == "Confetti")           { setEffect(1); }
-  else if (payload == "AddGlitter")         { setEffect(2); }
+  else if (payload == "Glitter")            { setEffect(2); }
   else if (payload == "Rainbow")            { setEffect(3); }
   else if (payload == "RainbowWithGlitter") { setEffect(4); }
+  else if (payload == "Rain")               { setEffect(5); }
+  else if (payload == "Solid")              { setEffect(6); }
   
   publishModeEffect(true);
 }
@@ -102,6 +143,15 @@ void receivedModeCoverage(String payload) {
   else if (payload == "BackProfile")  { setCoverage(5); }
   
   publishModeCoverage(true);
+}
+
+void receivedTopLed(String payload) {
+  uint8_t tl = payload.toInt();
+  if (tl < 0 || tl > 255) { /* do nothing */ return; } 
+  else {
+    setTopLed(tl);
+    publishTopLed(tl, true);
+  }
 }
 
 /* Sunset and Sunrise */

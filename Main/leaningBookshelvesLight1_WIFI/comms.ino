@@ -48,9 +48,9 @@ void mqttReconnect() {
   {
     //Loop until we're reconnected
     if (USE_SERIAL && DEBUG_COMMS) { Serial.print("Attempting MQTT connection..."); }
-    const String clientId = "LeaningBookshelvesLight1";
+    const String clientId = "MlC_LeaningBookshelvesLight1";
     // Attempt to connect
-    if (true == mqttClient.connect(clientId.c_str(), _username, _password))
+    if (true == mqttClient.connect(clientId.c_str(), _username, _password, "house/leaningbookshelves1/available", 0, true, "offline"))
     {
       if (USE_SERIAL && DEBUG_COMMS) { Serial.println("connected"); }
       mqttClient.publish(DEVICE_CD1_LEANINGBOOKSHELVES1, DEVICE_ONLINE);
@@ -94,6 +94,15 @@ void setupMQTT() {
   mqttClient.setCallback(receiveMessage);
 
   mqttReconnect();
+}
+
+void turnOffComms() 
+{
+  publishDeviceOffline();
+  DEBUG_COMMS = false;
+  turnOffWifi();
+  DEBUG_GEN = false;
+  turnOffSerial();
 }
 
 /*----------------------------loop MQTT----------------------------*/

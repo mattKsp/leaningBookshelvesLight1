@@ -41,41 +41,6 @@ void cycleEffect() {
 }
 
 /*
- * Golbal brightness utils
- */
-void setGlobalBrightness(int gb) {
-  //use this to achieve an override from the mesh, eg. to match levels
-  _ledGlobalBrightnessCur = gb;
-  brightnessRolloverCatch();
-}
-void increaseBrightness() {
-  _ledGlobalBrightnessCur += _ledBrightnessIncDecAmount;
-  brightnessRolloverCatch();
-}
-void decreaseBrightness() {
-  _ledGlobalBrightnessCur -= _ledBrightnessIncDecAmount;
-  brightnessRolloverCatch();
-}
-void brightnessRolloverCatch() {
-  if(_ledGlobalBrightnessCur > 255) {
-    _ledGlobalBrightnessCur = 255;
-  } else if(_ledGlobalBrightnessCur < 0) {
-    _ledGlobalBrightnessCur = 0;
-  }
-}
-
-/*
- * Color temperature utils
- */
-void setColorTemp(int i) {
-  _colorTempCur = i;
-}
-void cycleColorTemp() {
-  _colorTempCur += 1;
-  if (_colorTempCur >= _colorTempNum) { _colorTempCur = 0; }  // rollover
-}
-
-/*
  * Coverage mask utils
  */
 void setCoverage(int i) {
@@ -91,8 +56,43 @@ void cycleCoverage() {
 /*
  * System utils
  */
-void doReset() { }
+void turnOffWifi() {
+  if (DEBUG_GEN && Serial) { Serial.println("Disconnecting wifi..."); }
+  WiFi.disconnect();
+}
 
-void doRestart(uint8_t restartTime) { }
+void turnOffSerial() {
+  if (DEBUG_GEN) { Serial.println("Disconnecting serial..."); }
+  //
+}
 
+void factoryReset() { /* TODO */ }
+
+void deviceRestart() { ESP.restart(); }
+
+void deviceShutdown() { /* ??? */ }
+
+/*----------------------------main calls-----------------------*/
+void doReset() { 
+  resetDefaults();
+  deviceRestart();
+}
+
+void doRestart(uint8_t restartTime) {
+  uint16_t dly = (restartTime * 60 * 1000); // static ???
+  delay(dly);
+  deviceRestart();
+}
+
+/*
+ * Lockdown.
+ * 
+ * Emergency global disconnect (requires hard reset). 
+ *  0 = do thing (no severity)
+ *  1 = disconnect from LAN (bridges shutdown and mesh reboots) 
+ *  2 = shutdown mesh (everything reboots in standalone mode) 
+ *  3 = shutdown everything. 
+ *      - Devices to power off if possible, if not then reboot in standalone emergency mode. 
+ *      - These devices will require a hardware reset button implemented to clear the emergency mode.)
+ */
 void doLockdown(uint8_t severity) { }
